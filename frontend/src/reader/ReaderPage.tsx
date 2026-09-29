@@ -23,8 +23,10 @@ import {
   savePosition,
 } from '../api'
 import ChatPanel from '../panels/ChatPanel'
+import HighlightsPanel from '../panels/HighlightsPanel'
 import LookupsPanel from '../panels/LookupsPanel'
 import { useChat } from '../panels/useChat'
+import { useHighlights } from '../panels/useHighlights'
 import { useLookups } from '../panels/useLookups'
 import { readFlag, readPref, writeFlag, writePref } from '../prefs'
 import {
@@ -35,8 +37,11 @@ import {
   PageInput,
   StatusIcon,
   ThemeSwitcher,
+  Toasts,
+  useToasts,
 } from '../ui'
 import Contents from './Contents'
+import { selectionRects } from './highlights'
 import { currentItem, flatten } from './outline'
 import { type DocumentInfo, PdfReader, type ScaleValue } from './pdf'
 import { actionsFor, displayQuery, type ReaderSelection, trackSelection } from './selection'
@@ -73,6 +78,11 @@ export default function ReaderPage() {
   const { run: requestLookup } = lookups
   const chat = useChat(bookId)
   const { showThread: showChat } = chat
+  const highlights = useHighlights(bookId)
+  const { create: createHighlight, focus: focusHighlight } = highlights
+  const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
+  // What a click on a highlight in the book does; a ref, since the viewer outlives renders.
+  const onHighlightClick = useRef<(id: number) => void>(() => {})
   // Bumped to put the cursor in the chat's message box.
   const [chatFocus, setChatFocus] = useState(0)
 
@@ -137,6 +147,7 @@ export default function ReaderPage() {
         writePref(scalePref(book.id), String(value))
       },
       onError: (e) => setError({ kind: 'pdf', message: e.message }),
+      onHighlightClick: (id) => onHighlightClick.current(id),
     })
     reader.current = r
     r.open(bookFileUrl(book.id), { page: start, scale: parseScale(readPref(scalePref(book.id))) })
@@ -151,6 +162,10 @@ export default function ReaderPage() {
       reader.current = null
     }
   }, [book, requestedPage])
+
+  useEffect(() => {
+    reader.current?.setHighlights(highlights.items ?? [])
+  }, [highlights.items, info])
 
   // Save the position a moment after the page settles, and whatever's pending on leaving.
   useEffect(() => {
@@ -207,28 +222,57 @@ export default function ReaderPage() {
     setSelection(null)
   }, [])
 
+  const showTab = useCallback(
+    (next: Tab) => {
+      changeTab(next)
+      setPanelOpen(true)
+      writeFlag(PANEL_PREF, true)
+    },
+    [changeTab],
+  )
+
   /** Look up the selection, and show the answer in the panel. */
   const lookUp = useCallback(
     (kind: LookupKind) => {
       const s = selected.current
       if (!s || !actionsFor(s).includes(kind)) return
       requestLookup({ kind, page: s.page, text: s.raw, before: s.before, after: s.after }, displayQuery(kind, s))
-      changeTab('lookups')
-      setPanelOpen(true)
-      writeFlag(PANEL_PREF, true)
+      showTab('lookups')
       clearSelection()
     },
-    [requestLookup, changeTab, clearSelection],
+    [requestLookup, showTab, clearSelection],
   )
+
+  /** Highlight the selection where it sits on its page; with a note, open the note to type. */
+  const highlight = useCallback(
+    (withNote: boolean) => {
+      const s = selected.current
+      if (!s) return
+      const pageEl = s.viewer.querySelector<HTMLElement>(`.page[data-page-number="${s.page}"]`)
+      const rects = pageEl ? selectionRects(s.range, pageEl) : []
+      clearSelection()
+      if (rects.length === 0) return
+      if (withNote) showTab('highlights')
+      createHighlight({ page: s.page, text: s.raw, before: s.before, after: s.after, rects }, { withNote }).catch(
+        (e: Error) => showToast('error', `Couldn’t highlight that: ${e.message}`),
+      )
+    },
+    [clearSelection, createHighlight, showTab, showToast],
+  )
+
+  useEffect(() => {
+    onHighlightClick.current = (id) => {
+      focusHighlight(id)
+      showTab('highlights')
+    }
+  }, [focusHighlight, showTab])
 
   /** Open the chat with the cursor in its message box. */
   const startTyping = useCallback(() => {
-    changeTab('chat')
-    setPanelOpen(true)
-    writeFlag(PANEL_PREF, true)
+    showTab('chat')
     showChat()
     setChatFocus((n) => n + 1)
-  }, [changeTab, showChat])
+  }, [showTab, showChat])
 
   // Citations jump to their page and mark it, so the eye can find where it landed.
   const goToCited = useCallback((n: number) => {
@@ -261,6 +305,12 @@ export default function ReaderPage() {
         lookUp(lookupKind)
         return
       }
+      const key = e.key.toLowerCase()
+      if ((key === 'h' || key === 'n') && selected.current) {
+        e.preventDefault()
+        highlight(key === 'n')
+        return
+      }
       const actions: Record<string, () => void> = {
         j: () => r.nextPage(),
         k: () => r.previousPage(),
@@ -281,7 +331,7 @@ export default function ReaderPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [toggleContents, togglePanel, clearSelection, lookUp, startTyping])
+  }, [toggleContents, togglePanel, clearSelection, lookUp, highlight, startTyping])
 
   if (error && error.kind !== 'pdf') {
     return (
@@ -429,7 +479,7 @@ export default function ReaderPage() {
         )}
         <main className="reader-stage">
           <div ref={host} className="reader-host" />
-          {selection && <SelectionPopover selection={selection} onAction={lookUp} />}
+          {selection && <SelectionPopover selection={selection} onAction={lookUp} onHighlight={highlight} />}
           {error?.kind === 'pdf' ? (
             <div className="reader-overlay">
               <EmptyState
@@ -454,30 +504,42 @@ export default function ReaderPage() {
             tab={tab}
             onTabChange={changeTab}
             onClose={togglePanel}
-            lookups={
-              <LookupsPanel
-                lookups={lookups}
-                ai={ai}
-                labels={info?.labels ?? null}
-                pageCount={pageCount}
-                onGo={goToCited}
-              />
-            }
-            chat={
-              <ChatPanel
-                chat={chat}
-                ai={ai}
-                page={shown}
-                section={section}
-                labels={info?.labels ?? null}
-                pageCount={pageCount}
-                onGo={goToCited}
-                focusKey={chatFocus}
-              />
-            }
+            panels={{
+              lookups: (
+                <LookupsPanel
+                  lookups={lookups}
+                  ai={ai}
+                  labels={info?.labels ?? null}
+                  pageCount={pageCount}
+                  onGo={goToCited}
+                />
+              ),
+              chat: (
+                <ChatPanel
+                  chat={chat}
+                  ai={ai}
+                  page={shown}
+                  section={section}
+                  labels={info?.labels ?? null}
+                  pageCount={pageCount}
+                  onGo={goToCited}
+                  focusKey={chatFocus}
+                />
+              ),
+              highlights: (
+                <HighlightsPanel
+                  bookId={bookId}
+                  highlights={highlights}
+                  labels={info?.labels ?? null}
+                  onGo={goToCited}
+                  onReveal={(h) => reader.current?.revealHighlight(h)}
+                />
+              ),
+            }}
           />
         )}
       </div>
+      <Toasts toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }

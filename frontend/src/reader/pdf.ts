@@ -4,6 +4,7 @@ import type { PDFDocumentLoadingTask, PDFDocumentProxy } from 'pdfjs-dist/legacy
 import workerUrl from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'
 import type { PDFLinkService, PDFViewer } from 'pdfjs-dist/legacy/web/pdf_viewer.mjs'
 import 'pdfjs-dist/legacy/web/pdf_viewer.css'
+import { type DrawnHighlight, drawHighlights, highlightAt } from './highlights'
 
 /** A table of contents entry, with the page its destination points to. */
 export type OutlineItem = {
@@ -28,7 +29,12 @@ type Callbacks = {
   onPage: (page: number) => void
   onScale: (scale: number, value: ScaleValue) => void
   onError: (error: Error) => void
+  /** A click (not a selection) landed on a highlight. */
+  onHighlightClick?: (id: number) => void
 }
+
+// How long a revealed highlight stays marked, in case its page renders late.
+const FLASH_MS = 1600
 
 const PRESETS = new Set(['auto', 'page-width', 'page-fit'])
 
@@ -63,6 +69,9 @@ export class PdfReader {
   #resize: ResizeObserver | null = null
   #positioned = false
   #destroyed = false
+  #highlights = new Map<number, DrawnHighlight[]>()
+  #flashing: number | null = null
+  #flashTimer = 0
 
   constructor(host: HTMLElement, callbacks: Callbacks) {
     this.#callbacks = callbacks
@@ -74,6 +83,20 @@ export class PdfReader {
     pages.className = 'pdfViewer'
     this.#container.append(pages)
     host.append(this.#container)
+
+    // Highlights let clicks through to the text, so clicks find them by position. One that
+    // ends a selection (or clears one) isn't a click on a highlight.
+    let selecting = false
+    this.#container.addEventListener('pointerdown', () => {
+      selecting = !document.getSelection()?.isCollapsed
+    })
+    this.#container.addEventListener('click', (e) => {
+      if (selecting || !document.getSelection()?.isCollapsed || !this.#callbacks.onHighlightClick) return
+      const pageEl = (e.target as Element).closest<HTMLElement>('.page[data-page-number]')
+      const list = pageEl && this.#highlights.get(Number(pageEl.dataset.pageNumber))
+      const hit = list && highlightAt(pageEl, e.clientX, e.clientY, list)
+      if (hit) this.#callbacks.onHighlightClick(hit.id)
+    })
   }
 
   get container() {
@@ -116,6 +139,9 @@ export class PdfReader {
       eventBus.on('pagechanging', ({ pageNumber }: { pageNumber: number }) => {
         if (this.#positioned) this.#callbacks.onPage(pageNumber)
       })
+      eventBus.on('pagerendered', ({ pageNumber, source }: { pageNumber: number; source: { div: HTMLElement } }) =>
+        this.#draw(source.div, pageNumber),
+      )
       eventBus.on('scalechanging', ({ scale: s, presetValue }: { scale: number; presetValue?: string }) =>
         this.#callbacks.onScale(s, presetValue && PRESETS.has(presetValue) ? (presetValue as ScaleValue) : s),
       )
@@ -167,6 +193,47 @@ export class PdfReader {
     el.addEventListener('animationend', () => el.classList.remove('is-flashing'), { once: true })
   }
 
+  /** Draw these highlights, replacing any drawn before. */
+  setHighlights(highlights: DrawnHighlight[]) {
+    this.#highlights = new Map()
+    for (const h of highlights) {
+      const list = this.#highlights.get(h.page_number)
+      if (list) list.push(h)
+      else this.#highlights.set(h.page_number, [h])
+    }
+    for (const pageEl of this.#container.querySelectorAll<HTMLElement>('.page[data-page-number]')) {
+      this.#draw(pageEl, Number(pageEl.dataset.pageNumber))
+    }
+  }
+
+  /** Scroll a highlight into view, a third of the way down, and mark it for a moment. */
+  revealHighlight(h: DrawnHighlight) {
+    const pageEl = this.#page(h.page_number)
+    if (!pageEl || !this.#viewer?.pdfDocument) return
+    const top = Math.min(...h.rects.map((r) => r.y))
+    const page = pageEl.getBoundingClientRect()
+    const view = this.#container.getBoundingClientRect()
+    const y = page.top + pageEl.clientTop + top * pageEl.clientHeight - view.top
+    this.#container.scrollBy({ top: y - view.height / 3 })
+    clearTimeout(this.#flashTimer)
+    this.#flashing = h.id
+    this.#draw(pageEl, h.page_number)
+    this.#flashTimer = window.setTimeout(() => {
+      this.#flashing = null
+    }, FLASH_MS)
+  }
+
+  #page(n: number) {
+    return this.#container.querySelector<HTMLElement>(`.page[data-page-number="${n}"]`)
+  }
+
+  #draw(pageEl: HTMLElement, n: number) {
+    // Only pages pdf.js has rendered; the rest are drawn when they render.
+    if (pageEl.querySelector(':scope > .canvasWrapper')) {
+      drawHighlights(pageEl, this.#highlights.get(n) ?? [], this.#flashing)
+    }
+  }
+
   nextPage() {
     this.#viewer?.nextPage()
   }
@@ -191,6 +258,7 @@ export class PdfReader {
 
   destroy() {
     this.#destroyed = true
+    clearTimeout(this.#flashTimer)
     this.#resize?.disconnect()
     this.#task?.destroy()
     this.#container.remove()

@@ -6,7 +6,6 @@ fits, and the page the reader is on. The answer streams back as it's written;
 app/ai/replies.py runs each one in its own thread.
 """
 
-import re
 from collections.abc import Iterator
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -14,6 +13,7 @@ from datetime import datetime
 from sqlalchemy import delete
 from sqlmodel import Session, SQLModel, select
 
+from app import citations
 from app.ai import context
 from app.ai.gemini import CacheMissing, Gemini, Turn, Usage
 from app.ai.prompts import render
@@ -29,10 +29,6 @@ TITLE_CHARS = 80
 # In excerpt mode: pages matching the question's words, and pages the last answer cited.
 QUESTION_PAGES = 12
 CITED_PAGES = 10
-
-# As in frontend/src/panels/citations.ts: [p. 12], [pp. 12–14], [p. 12, 40].
-_CITATION = re.compile(r"\[pp?\.\s*([^\]]+)\]")
-_REF = re.compile(r"^(\d+)(?:\s*[–—-]\s*(\d+))?$")
 
 
 class MessageOut(SQLModel):
@@ -191,15 +187,10 @@ def save_answer(
 
 
 def citations_in(text: str, book_id: int, page_count: int | None) -> list[dict]:
-    """The pages an answer cites, in order of first mention. Like the frontend, a bracket
-    holding anything but pages of this book isn't a citation."""
-    found: dict[tuple[int, int | None], None] = {}
-    for match in _CITATION.finditer(text):
-        refs = _refs(match.group(1), page_count)
-        for ref in refs or []:
-            found.setdefault(ref)
+    """The pages an answer cites, in order of first mention."""
     return [
-        {"book_id": book_id, "page": page, **({"end": end} if end else {})} for page, end in found
+        {"book_id": book_id, "page": page, **({"end": end} if end else {})}
+        for page, end in citations.cited(text, page_count)
     ]
 
 
@@ -212,22 +203,6 @@ def title_for(text: str) -> str:
     if " " in cut:
         cut = cut.rsplit(" ", 1)[0]
     return cut.rstrip(" ,;:.-–—") + "…"
-
-
-def _refs(inner: str, page_count: int | None) -> list[tuple[int, int | None]] | None:
-    def in_book(n: int) -> bool:
-        return n >= 1 and (page_count is None or n <= page_count)
-
-    refs = []
-    for item in re.split(r"[,;]", inner):
-        m = _REF.match(item.strip())
-        if not m:
-            return None
-        page, end = int(m.group(1)), int(m.group(2)) if m.group(2) else None
-        if not in_book(page) or (end is not None and (end < page or not in_book(end))):
-            return None
-        refs.append((page, end if end != page else None))
-    return refs
 
 
 def _recent(history: list[Message]) -> list[Message]:

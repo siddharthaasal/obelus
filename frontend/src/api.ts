@@ -273,3 +273,45 @@ function parseEvent(block: string): ChatEvent | null {
   if (!name || data.length === 0) return null
   return { event: name, ...JSON.parse(data.join('\n')) } as ChatEvent
 }
+
+// Highlights and notes. Shapes mirror backend/app/api/highlights.py.
+
+export type HighlightColor = 'yellow' | 'green' | 'blue' | 'pink'
+
+/** A box on a page, as fractions of the page's width and height. */
+export type PageRect = { x: number; y: number; w: number; h: number }
+
+export type Highlight = {
+  id: number
+  book_id: number
+  page_number: number
+  /** The passage as the extracted text has it, when it was found there. */
+  selected_text: string
+  char_start: number | null
+  char_end: number | null
+  rects: PageRect[]
+  color: HighlightColor
+  note: string
+  created_at: string
+  updated_at: string
+}
+
+export type HighlightRequest = {
+  page: number
+  text: string
+  before?: string
+  after?: string
+  rects: PageRect[]
+  color?: HighlightColor
+  note?: string
+}
+
+export const listHighlights = (bookId: number) => request<Highlight[]>(`/books/${bookId}/highlights`)
+export const createHighlight = (bookId: number, body: HighlightRequest) =>
+  request<Highlight>(`/books/${bookId}/highlights`, json('POST', body))
+export const updateHighlight = (bookId: number, id: number, changes: { color?: HighlightColor; note?: string }) =>
+  request<Highlight>(`/books/${bookId}/highlights/${id}`, json('PATCH', changes))
+export const deleteHighlight = (bookId: number, id: number) =>
+  request<void>(`/books/${bookId}/highlights/${id}`, { method: 'DELETE' })
+/** The book's highlights, notes, and lookups as a Markdown file (a download). */
+export const notesUrl = (bookId: number) => `/api/books/${bookId}/notes.md`

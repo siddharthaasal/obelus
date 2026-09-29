@@ -1,0 +1,38 @@
+.color-picker {
+  display: inline-flex;
+  gap: var(--spacing-2);
+}
+.color-option {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+.color-option:hover {
+  background: var(--bg-hover);
+}
+.color-option-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.color-option-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: var(--radius-pill);
+  box-shadow: inset 0 0 0 1px var(--border-input);
+}
+/* The chosen one gets a ring in the text colour: the colours themselves carry no state. */
+.color-option.is-checked .color-option-dot {
+  box-shadow:
+    0 0 0 2px var(--bg-raised),
+    0 0 0 3.5px var(--fg-muted);
+}
+.color-option-input:focus-visible + .color-option-dot {
+  outline: 1.5px solid var(--border-focus);
+  outline-offset: 3px;
+}

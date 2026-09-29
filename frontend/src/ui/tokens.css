@@ -94,6 +94,13 @@
   /* Tinted text (badges, danger button) mixes its hue toward this to stay legible */
   --tone-shift: light-dark(black, white);
 
+  /* Highlighter inks. They mark white book pages (with multiply) in both themes, so they
+     don't switch; swatches in the panel use the same colours. */
+  --highlight-yellow: #ffe16b;
+  --highlight-green: #b5eaa6;
+  --highlight-blue: #b3d7ff;
+  --highlight-pink: #ffc2dc;
+
   --selection: light-dark(
     color-mix(in srgb, var(--color-iris-violet) 24%, transparent),
     color-mix(in srgb, var(--color-iris-violet) 38%, transparent)
