@@ -1,3 +1,4 @@
+import { BookOpen, FolderSync, Plus, Upload } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   type Book,
@@ -9,9 +10,9 @@ import {
   scanLibrary,
   uploadBook,
 } from '../api'
+import { Badge, Button, Card, EmptyState, PageHeader, StatusIcon, Toasts, useToasts } from '../ui'
 import BookRow from './BookRow'
-
-type Message = { id: number; kind: 'info' | 'error'; text: string }
+import './library.css'
 
 const POLL_BUSY_MS = 1500
 // The backend scans the library folder every 10s; this picks up what it finds.
@@ -21,19 +22,8 @@ export default function LibraryPage() {
   const [books, setBooks] = useState<Book[] | null>(null)
   const [libraryDir, setLibraryDir] = useState<string | null>(null)
   const [uploading, setUploading] = useState(0)
-  const [messages, setMessages] = useState<Message[]>([])
+  const { toasts, show: say, dismiss } = useToasts()
   const fileInput = useRef<HTMLInputElement>(null)
-  const nextId = useRef(0)
-
-  const dismiss = useCallback((id: number) => setMessages((m) => m.filter((x) => x.id !== id)), [])
-  const say = useCallback(
-    (kind: Message['kind'], text: string) => {
-      const id = nextId.current++
-      setMessages((m) => [...m, { id, kind, text }])
-      if (kind === 'info') setTimeout(() => dismiss(id), 6000)
-    },
-    [dismiss],
-  )
 
   const refresh = useCallback(
     () =>
@@ -99,81 +89,89 @@ export default function LibraryPage() {
     await refresh()
   }
 
-  function remove(book: Book) {
-    const ok = window.confirm(
-      `Remove “${book.title}” from the library?\n\nIts PDF moves to the trash folder in your data directory.`,
-    )
-    if (ok) act(() => deleteBook(book.id), `Couldn't remove “${book.title}”`)
-  }
-
   return (
     <main className="page library">
-      <div className="library-head">
-        <h1>Library</h1>
-        <div className="actions">
-          <button type="button" onClick={rescan} title="Look for PDFs added to the library folder">
-            Rescan folder
-          </button>
-          <button type="button" className="primary" onClick={() => fileInput.current?.click()}>
-            Add PDFs
-          </button>
-          <input
-            ref={fileInput}
-            type="file"
-            accept="application/pdf,.pdf"
-            multiple
-            hidden
-            onChange={(e) => {
-              addFiles(Array.from(e.target.files ?? []))
-              e.target.value = ''
-            }}
-          />
-        </div>
-      </div>
-      <p className="hint">
-        Drop PDFs anywhere on this page{libraryDir && <>, or copy them into <code>{libraryDir}</code></>}.
-      </p>
-
-      {messages.length > 0 && (
-        <ul className="messages">
-          {messages.map((m) => (
-            <li key={m.id} className={m.kind}>
-              <span>{m.text}</span>
-              <button type="button" className="link" onClick={() => dismiss(m.id)} aria-label="Dismiss">
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {uploading > 0 && (
-        <p className="uploading">
-          Adding {uploading} file{uploading > 1 ? 's' : ''}…
-        </p>
-      )}
+      <PageHeader
+        title="Library"
+        accessory={
+          books && books.length > 0 && (
+            <Badge className="tabular">
+              {books.length} {books.length === 1 ? 'book' : 'books'}
+            </Badge>
+          )
+        }
+        description={
+          <>
+            Drop PDFs anywhere on this page
+            {libraryDir && (
+              <>
+                , or copy them into <code>{libraryDir}</code>
+              </>
+            )}
+            .
+          </>
+        }
+        actions={
+          <>
+            <Button icon={FolderSync} onClick={rescan} title="Look for PDFs added to the library folder">
+              Rescan folder
+            </Button>
+            <Button variant="primary" icon={Plus} onClick={() => fileInput.current?.click()}>
+              Add PDFs
+            </Button>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="application/pdf,.pdf"
+              multiple
+              hidden
+              onChange={(e) => {
+                addFiles(Array.from(e.target.files ?? []))
+                e.target.value = ''
+              }}
+            />
+          </>
+        }
+      />
 
       {books === null ? null : books.length === 0 && uploading === 0 ? (
-        <div className="empty">
-          <p>Your library is empty.</p>
-          <p>Add a PDF to get started. Try the messiest one you own first.</p>
-        </div>
+        <Card padded={false} className="library-list">
+          <EmptyState icon={BookOpen} title="Your library is empty">
+            <p>Add a PDF to get started. Try the messiest one you own first.</p>
+          </EmptyState>
+        </Card>
       ) : (
-        <ul className="books">
+        <Card as="ul" padded={false} className="library-list">
+          {uploading > 0 && (
+            <li className="book-row book-row-pending">
+              <StatusIcon state="progress" progress={0.25} />
+              <span>
+                Adding {uploading} file{uploading > 1 ? 's' : ''}…
+              </span>
+            </li>
+          )}
           {books.map((book) => (
             <BookRow
               key={book.id}
               book={book}
               onReprocess={() => act(() => reprocessBook(book.id), "Couldn't reprocess")}
-              onRemove={() => remove(book)}
+              onRemove={() => act(() => deleteBook(book.id), `Couldn't remove “${book.title}”`)}
               onSaved={refresh}
-              onError={(text) => say('error', text)}
             />
           ))}
-        </ul>
+        </Card>
       )}
 
-      {dragging && <div className="drop-overlay">Drop PDFs to add them</div>}
+      <Toasts toasts={toasts} onDismiss={dismiss} />
+
+      {dragging && (
+        <div className="drop-overlay">
+          <div className="drop-target">
+            <Upload size={20} aria-hidden />
+            Drop PDFs to add them
+          </div>
+        </div>
+      )}
     </main>
   )
 }

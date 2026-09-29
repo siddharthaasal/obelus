@@ -1,0 +1,36 @@
+.badge {
+  --badge-color: var(--fg-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  height: 18px;
+  padding: 0 var(--spacing-6);
+  border-radius: var(--radius-badge);
+  background: var(--bg-tint);
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  letter-spacing: normal;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.badge-green {
+  --badge-color: var(--status-done);
+}
+.badge-red {
+  --badge-color: var(--status-danger);
+}
+.badge-teal {
+  --badge-color: var(--status-info);
+}
+.badge-violet {
+  --badge-color: var(--tag-violet);
+}
+.badge-lavender {
+  --badge-color: var(--tag-lavender);
+}
+.badge:not(.badge-neutral) {
+  background: color-mix(in srgb, var(--badge-color) 14%, transparent);
+  color: color-mix(in srgb, var(--badge-color), var(--tone-shift) 35%);
+}

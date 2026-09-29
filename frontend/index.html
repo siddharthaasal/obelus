@@ -4,6 +4,16 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f7f8f8" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#08090a" />
+    <script>
+      // Apply a saved theme before first paint (see src/ui/useTheme.ts). No value: follow the system.
+      try {
+        const theme = localStorage.getItem('obelus.theme')
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme
+      } catch {}
+    </script>
     <title>Obelus</title>
   </head>
   <body>

@@ -1,0 +1,58 @@
+/* App shell and page layout. */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  height: var(--topbar-height);
+  padding: 0 var(--page-gutter);
+  background: color-mix(in srgb, var(--bg-canvas) 82%, transparent);
+  backdrop-filter: blur(12px);
+  border-bottom: var(--hairline) solid var(--border-subtle);
+}
+.topbar-brand {
+  display: inline-flex;
+  padding: var(--spacing-4);
+  margin-left: calc(-1 * var(--spacing-4));
+  border-radius: var(--radius-control);
+}
+
+.topbar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-16);
+}
+
+.health {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+}
+.health-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--status-done);
+}
+.health-bad {
+  color: var(--fg-body);
+}
+.health-bad .health-dot {
+  background: var(--status-danger);
+}
+
+.page {
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: var(--spacing-40) var(--page-gutter) var(--spacing-96);
+}
+.page-wide {
+  max-width: none;
+  padding-top: var(--spacing-24);
+}

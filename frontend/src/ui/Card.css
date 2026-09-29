@@ -1,0 +1,11 @@
+.card {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--bg-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.card-padded {
+  padding: var(--card-padding);
+}

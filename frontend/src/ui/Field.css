@@ -1,0 +1,95 @@
+.input {
+  height: 32px;
+  width: 100%;
+  padding: 0 var(--spacing-12);
+  border: 1px solid var(--border-input);
+  border-radius: var(--radius-control);
+  background: var(--bg-control);
+  color: var(--fg-body);
+  font-size: var(--text-ui);
+  transition: border-color var(--duration-fast) var(--ease-out);
+}
+.input:hover:not(:disabled, :focus) {
+  border-color: var(--border-strong);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+.input-compact {
+  height: 26px;
+  padding: 0 var(--spacing-8);
+  font-size: var(--text-caption);
+}
+
+.field {
+  display: grid;
+  gap: var(--spacing-6);
+}
+.field-label {
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+}
+.field-hint {
+  color: var(--fg-faint);
+  font-size: var(--text-label);
+}
+
+.switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  cursor: pointer;
+  user-select: none;
+}
+.switch:hover {
+  color: var(--fg-body);
+}
+.switch-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.switch-track {
+  position: relative;
+  width: 26px;
+  height: 16px;
+  border-radius: var(--radius-pill);
+  background: var(--bg-slate);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.switch-track::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fg-muted);
+  transition:
+    transform var(--duration-normal) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out);
+}
+/* On is monochrome: acid lime stays reserved for the primary action. */
+.switch-input:checked + .switch-track {
+  background: var(--fg-body);
+  box-shadow: none;
+}
+.switch-input:checked + .switch-track::after {
+  transform: translateX(10px);
+  background: var(--bg-canvas);
+}
+.switch-input:focus-visible + .switch-track {
+  outline: 1.5px solid var(--border-focus);
+  outline-offset: 2px;
+}
+.switch-input:disabled ~ * {
+  opacity: 0.45;
+}

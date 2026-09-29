@@ -1,0 +1,36 @@
+.empty-state {
+  display: grid;
+  justify-items: center;
+  gap: var(--spacing-8);
+  padding: var(--spacing-64) var(--spacing-24);
+  text-align: center;
+}
+.empty-state-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--spacing-8);
+  border-radius: var(--radius-card);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-card);
+  color: var(--fg-muted);
+}
+.empty-state-title {
+  color: var(--fg-strong);
+  font-size: var(--text-ui);
+  font-weight: var(--font-weight-medium);
+}
+.empty-state-body {
+  display: grid;
+  gap: var(--spacing-4);
+  max-width: 400px;
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+.empty-state-actions {
+  display: flex;
+  gap: var(--spacing-8);
+  margin-top: var(--spacing-12);
+}

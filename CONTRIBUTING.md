@@ -47,6 +47,9 @@ meaningless sizes.
 - **Python:** `make fmt` formats and autofixes. `make lint` must pass. Ruff config is in
   `backend/pyproject.toml`.
 - **TypeScript:** oxlint and `tsc` via `make lint`.
+- **UI:** follow [DESIGN.md](DESIGN.md). Build pages from the components in `frontend/src/ui`
+  and style them with its tokens, not hex values. `/design` in the running app shows everything
+  available.
 - **Prompts:** plain files in `backend/app/ai/prompts/`, so either of us can tune them without
   touching code.
 - **Dependencies:** `cd backend && uv add <pkg>`, and `cd frontend && npm install <pkg>`. Commit

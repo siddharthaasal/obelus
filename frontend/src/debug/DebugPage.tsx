@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
   ApiError,
@@ -10,6 +11,8 @@ import {
   pageImageUrl,
   reprocessBook,
 } from '../api'
+import { Badge, Button, Card, cx, Input, Kbd, Note, PageHeader, Switch } from '../ui'
+import './debug.css'
 
 const REASON_LABEL: Record<string, string> = {
   header: 'running header',
@@ -105,78 +108,101 @@ export default function DebugPage() {
   }
 
   if (!book) {
-    return <main className="page">{error ? <p className="book-error">{error}</p> : null}</main>
+    return <main className="page">{error && <Note tone="error">{error}</Note>}</main>
   }
 
   const paragraphs = page?.clean_text ? page.clean_text.split('\n\n') : []
   const notes = page?.footnotes ? page.footnotes.split('\n\n') : []
 
   return (
-    <main className="page debug">
-      <div className="debug-head">
-        <div>
-          <Link to="/" className="back">
-            ← Library
-          </Link>
-          <h1>{book.title}</h1>
-        </div>
+    <main className="page page-wide debug">
+      <PageHeader
+        eyebrow={
+          <>
+            <Link to="/">Library</Link>
+            <ChevronRight size={12} aria-hidden />
+            <span>Inspect text</span>
+          </>
+        }
+        title={book.title}
+        actions={
+          <>
+            <Switch label="Page image" checked={showImage} onChange={toggleImage} />
+            <Button icon={RotateCw} onClick={reprocess} disabled={busy}>
+              {busy ? 'Reprocessing…' : 'Reprocess book'}
+            </Button>
+          </>
+        }
+      />
+
+      <div className="debug-toolbar">
         <nav className="pager" aria-label="Pages">
-          <button type="button" onClick={() => go(n - 1)} disabled={n <= 1} aria-label="Previous page">
-            ‹
-          </button>
+          <Button
+            size="sm"
+            icon={ChevronLeft}
+            onClick={() => go(n - 1)}
+            disabled={n <= 1}
+            aria-label="Previous page"
+            title="Previous page (← or K)"
+          />
           <PageInput key={n} value={n} max={total} onGo={go} />
-          <span className="of">of {total}</span>
-          <button type="button" onClick={() => go(n + 1)} disabled={n >= total} aria-label="Next page">
-            ›
-          </button>
+          <span className="pager-of tabular">of {total}</span>
+          <Button
+            size="sm"
+            icon={ChevronRight}
+            onClick={() => go(n + 1)}
+            disabled={n >= total}
+            aria-label="Next page"
+            title="Next page (→ or J)"
+          />
+          <span className="pager-keys" aria-hidden="true">
+            <Kbd>←</Kbd>
+            <Kbd>→</Kbd>
+          </span>
         </nav>
-        <div className="actions">
-          <label className="toggle">
-            <input type="checkbox" checked={showImage} onChange={toggleImage} /> Page image
-          </label>
-          <button type="button" onClick={reprocess} disabled={busy}>
-            {busy ? 'Reprocessing…' : 'Reprocess book'}
-          </button>
-        </div>
+        {page && (
+          <p className="debug-stats tabular">
+            {page.label && page.label !== String(n) && <span>Printed page {page.label}</span>}
+            <span>
+              {page.raw_text.length.toLocaleString()} raw → {page.clean_text.length.toLocaleString()}{' '}
+              clean chars
+            </span>
+            <span>
+              {paragraphs.length} paragraph{paragraphs.length === 1 ? '' : 's'}
+            </span>
+            <span>
+              {notes.length} footnote block{notes.length === 1 ? '' : 's'}
+            </span>
+            <span>{page.removed_lines.length} removed</span>
+            {page.needs_ocr && <Badge tone="teal">Needs OCR</Badge>}
+          </p>
+        )}
       </div>
+      {error && <Note tone="error">{error}</Note>}
 
-      {page && (
-        <p className="debug-stats">
-          {page.label && page.label !== String(n) && <>Printed page {page.label} · </>}
-          {page.raw_text.length.toLocaleString()} raw → {page.clean_text.length.toLocaleString()} clean
-          chars · {paragraphs.length} paragraph{paragraphs.length === 1 ? '' : 's'} ·{' '}
-          {notes.length} footnote block{notes.length === 1 ? '' : 's'} · {page.removed_lines.length} removed
-          {page.needs_ocr && <span className="flag">needs OCR</span>}
-        </p>
-      )}
-      {error && <p className="book-error">{error}</p>}
-
-      <div className={`debug-cols ${showImage ? 'with-image' : ''}`}>
+      <div className={cx('debug-cols', showImage && 'with-image')}>
         {showImage && (
-          <section className="col">
-            <h3>Page</h3>
+          <Column title="Page">
             <img
               key={`${bookId}-${n}`}
               className="page-image"
               src={pageImageUrl(bookId, n)}
               alt={`Page ${n}`}
             />
-          </section>
+          </Column>
         )}
-        <section className="col">
-          <h3>Raw text</h3>
+        <Column title="Raw text">
           <pre className="raw">{page?.raw_text}</pre>
-        </section>
-        <section className="col">
-          <h3>Clean text</h3>
-          <div className="clean">
+        </Column>
+        <Column title="Clean text">
+          <div className="clean prose">
             {paragraphs.map((p, i) => (
               <p key={i}>{p}</p>
             ))}
           </div>
           {notes.length > 0 && (
             <>
-              <h3>Footnotes</h3>
+              <h3 className="debug-subhead">Footnotes</h3>
               <div className="clean notes">
                 {notes.map((p, i) => (
                   <p key={i}>{p}</p>
@@ -186,20 +212,29 @@ export default function DebugPage() {
           )}
           {page && page.removed_lines.length > 0 && (
             <>
-              <h3>Removed</h3>
+              <h3 className="debug-subhead">Removed</h3>
               <ul className="removed">
                 {page.removed_lines.map((r, i) => (
                   <li key={i}>
-                    <span className="reason">{REASON_LABEL[r.reason] ?? r.reason}</span>
-                    <span className="text">{r.text}</span>
+                    <Badge>{REASON_LABEL[r.reason] ?? r.reason}</Badge>
+                    <span className="removed-text text-mono">{r.text}</span>
                   </li>
                 ))}
               </ul>
             </>
           )}
-        </section>
+        </Column>
       </div>
     </main>
+  )
+}
+
+function Column({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <Card as="section" padded={false} className="debug-col">
+      <h2 className="debug-col-title">{title}</h2>
+      <div className="debug-col-body">{children}</div>
+    </Card>
   )
 }
 
@@ -211,7 +246,9 @@ function PageInput({ value, max, onGo }: { value: number; max: number; onGo: (n:
     else setDraft(String(value))
   }
   return (
-    <input
+    <Input
+      compact
+      mono
       className="page-input"
       inputMode="numeric"
       aria-label="Page number"
