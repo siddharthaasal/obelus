@@ -1,0 +1,28 @@
+.page-ref {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 var(--spacing-4);
+  border: 0;
+  border-radius: var(--radius-badge);
+  background: var(--bg-tint);
+  color: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-feature-settings: normal;
+  font-size: 11px;
+  font-weight: var(--font-weight-regular);
+  letter-spacing: var(--tracking-mono);
+  line-height: 1;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+button.page-ref {
+  cursor: pointer;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+button.page-ref:hover {
+  background: var(--bg-active);
+  color: var(--fg-strong);
+}

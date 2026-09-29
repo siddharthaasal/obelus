@@ -104,3 +104,71 @@ export const scanLibrary = () =>
   request<{ added: number; duplicates: number }>('/library/scan', { method: 'POST' })
 
 export const isBusy = (b: Book) => b.status === 'queued' || b.status === 'extracting'
+
+// AI: selection actions (lookups). Answer shapes mirror backend/app/ai/schemas.py.
+
+export type AiStatus = { configured: boolean; model_fast: string; problem: string | null }
+
+export type LookupKind = 'define' | 'who' | 'explain'
+export type PageNote = { page: number; note: string }
+
+export type DefineAnswer = {
+  term: string
+  in_context: string
+  general: string | null
+  across_book: string | null
+  key_pages: PageNote[]
+}
+export type WhoAnswer = {
+  name: string
+  relation_label: string
+  bio: string
+  relation: string
+  here: string
+  key_pages: PageNote[]
+}
+export type ExplainAnswer = {
+  restatement: string
+  key_terms: { term: string; meaning: string }[]
+  in_argument: string
+  related_pages: PageNote[]
+}
+
+type LookupBase = {
+  id: number
+  book_id: number
+  page_number: number
+  query_text: string
+  context_text: string
+  char_start: number | null
+  char_end: number | null
+  model: string
+  /** How the book reached the model: cached whole, sent whole, or excerpts of a long book. */
+  context_mode: 'cached' | 'inline' | 'excerpt'
+  created_at: string
+}
+export type Lookup =
+  | (LookupBase & { kind: 'define'; response: DefineAnswer })
+  | (LookupBase & { kind: 'who'; response: WhoAnswer })
+  | (LookupBase & { kind: 'explain'; response: ExplainAnswer })
+
+export type LookupRequest = {
+  kind: LookupKind
+  page: number
+  /** The selection as the text layer has it; the backend anchors it in the extracted text. */
+  text: string
+  before?: string
+  after?: string
+  /** Ask again instead of returning a saved answer. */
+  refresh?: boolean
+}
+
+export const getAiStatus = () => request<AiStatus>('/ai')
+/** Create or reuse the book's Gemini cache, so the first lookup doesn't wait for it. */
+export const prepareBookContext = (bookId: number) =>
+  request<{ mode: string }>(`/books/${bookId}/context`, { method: 'POST' })
+export const listLookups = (bookId: number) => request<Lookup[]>(`/books/${bookId}/lookups`)
+export const createLookup = (bookId: number, body: LookupRequest) =>
+  request<Lookup>(`/books/${bookId}/lookups`, json('POST', body))
+export const deleteLookup = (bookId: number, id: number) =>
+  request<void>(`/books/${bookId}/lookups/${id}`, { method: 'DELETE' })

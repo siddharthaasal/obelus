@@ -18,6 +18,10 @@ _data_dir = Path(tempfile.mkdtemp(prefix="obelus-test-"))
 os.environ["DATA_DIR"] = str(_data_dir)
 os.environ["WORKER_ENABLED"] = "false"
 os.environ["LIBRARY_SCAN_SECONDS"] = "0"
+# The AI settings tests assume, whatever your .env says (a blank value would fall back to it).
+os.environ["CONTEXT_CACHING"] = "true"
+os.environ["MAX_BOOK_TOKENS"] = "0"  # no cap
+os.environ["LOOKUP_THINKING"] = "low"
 
 from app.config import Settings  # noqa: E402
 
@@ -42,11 +46,14 @@ _ensure_test_database()
 
 from fastapi.testclient import TestClient  # noqa: E402
 
+from app.ai import context  # noqa: E402
+from app.ai import gemini as gemini_module  # noqa: E402
 from app.config import get_settings  # noqa: E402
 from app.db import engine  # noqa: E402
 from app.ingest import library  # noqa: E402
 from app.ingest.worker import process_next_job  # noqa: E402
 from app.main import app  # noqa: E402
+from tests.fakes import FakeGemini  # noqa: E402
 
 
 @pytest.fixture(scope="session")
@@ -67,7 +74,27 @@ def client(app_client: TestClient) -> TestClient:
         shutil.rmtree(d, ignore_errors=True)
         d.mkdir(parents=True)
     library._known_duplicates.clear()
+    context._uncacheable.clear()
     return app_client
+
+
+@pytest.fixture(autouse=True)
+def no_real_gemini(monkeypatch):
+    """Tests never call the real Gemini API, even with a key in .env. Use `gemini`."""
+
+    def refuse(api_key: str):
+        raise AssertionError("A test tried to call the real Gemini API; use the gemini fixture")
+
+    monkeypatch.setattr(gemini_module, "_client_for", refuse)
+
+
+@pytest.fixture
+def gemini(monkeypatch) -> FakeGemini:
+    """A fake Gemini behind every AI call, with an API key set."""
+    fake = FakeGemini()
+    monkeypatch.setattr(get_settings(), "gemini_api_key", "test-key")
+    monkeypatch.setattr(gemini_module, "_client_for", lambda api_key: fake)
+    return fake
 
 
 @pytest.fixture

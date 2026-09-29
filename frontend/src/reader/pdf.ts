@@ -157,6 +157,16 @@ export class PdfReader {
     if (this.#viewer?.pdfDocument) this.#viewer.currentPageNumber = page
   }
 
+  /** Briefly mark a page, so a jump to it from a citation is easy to follow. */
+  flashPage(page: number) {
+    const el = this.#container.querySelector<HTMLElement>(`.page[data-page-number="${page}"]`)
+    if (!el) return
+    el.classList.remove('is-flashing')
+    void el.offsetWidth // restart the animation if it's already running
+    el.classList.add('is-flashing')
+    el.addEventListener('animationend', () => el.classList.remove('is-flashing'), { once: true })
+  }
+
   nextPage() {
     this.#viewer?.nextPage()
   }

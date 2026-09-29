@@ -133,6 +133,7 @@ marketing-style pages, not the app. Mono is never used for headings or prose.
 | `PageHeader` | The top of every page: optional breadcrumb, title, an accessory such as a count badge, description, actions. |
 | `Field`, `Input`, `Switch` | Forms. `Input compact mono` for toolbar inputs like the page number. `Switch` is for settings that apply immediately. |
 | `PageInput` | The page number field in the reader and debug view: shows the current page, Enter goes, Escape cancels. |
+| `PageRef` | A page citation, "p. 37" or "pp. 12–14". Shows the printed page number when the PDF has labels and jumps to the PDF page. |
 | `SegmentedControl` | One of a few options, applied immediately: panel tabs, search modes, the theme. Native radios underneath; `iconOnly` turns labels into tooltips. |
 | `ThemeSwitcher`, `useTheme` | The top bar's theme control and the hook behind it. |
 | `Dialog` | Modal on the native `<dialog>`. Use it for confirmations and short forms. Pass `onSubmit` to make the panel a form. Footer order is Cancel, then the committing action. |
@@ -156,6 +157,9 @@ in empty states. Icons are always a single grey, unless they carry status.
   Say what will happen, including where things go ("Its PDF moves to the trash folder").
 - **Messages:** use a `Note` when the message is about something on screen (a failed book, pages
   needing OCR). Use a toast when it reports the result of an action.
+- **Citations** in AI answers are `PageRef`s set inline in the text (`panels/CitedText.tsx`
+  turns the model's `[p. N]` into them). Clicking one jumps the reader to the page and briefly
+  lights up its frame.
 - **Keyboard shortcuts** appear in button `title` text ("Next page (→ or J)") and, where there's
   room, as `Kbd` hints next to the control. Shortcuts are single keys, ignored while typing in a
   field. `[` and `]` toggle left and right panels, as in Linear.

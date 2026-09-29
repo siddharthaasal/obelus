@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-from sqlalchemy import func, update
+from sqlalchemy import update
 from sqlmodel import Session, select
 
 from app.models import Book, BookStatus, Job, JobStatus
@@ -29,9 +29,11 @@ def enqueue(session: Session, kind: str, book_id: int | None = None, payload=Non
 
 
 def claim_next(session: Session) -> Job | None:
+    # run_after is written from this process's clock (utcnow), so compare with that clock:
+    # Postgres's now() can run a few milliseconds behind it (Docker's VM clock on macOS).
     job = session.exec(
         select(Job)
-        .where(Job.status == JobStatus.queued, Job.run_after <= func.now())
+        .where(Job.status == JobStatus.queued, Job.run_after <= utcnow())
         .order_by(Job.id)
         .with_for_update(skip_locked=True)
         .limit(1)

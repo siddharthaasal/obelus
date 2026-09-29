@@ -42,6 +42,22 @@ The rules live in `backend/app/ingest/clean.py`, and PDFs vary a lot. When a boo
 Font-size rules (footnotes, headings) are skipped on scanned pages, because OCR text layers have
 meaningless sizes.
 
+## Tuning prompts
+
+Prompts are Markdown files in `backend/app/ai/prompts/`, read on every request, so edits apply
+without a restart. Code fills the `{{name}}` placeholders (a missing one raises), and
+`<!-- comments -->` are notes for whoever edits the file; they never reach the model. Each
+file's header says what it's for and which placeholders it gets.
+
+- `system.md` is cached with each book's text, so changing it rebuilds a book's cache at its
+  next lookup: one full-price read of the book.
+- An answer's fields are fixed by `backend/app/ai/schemas.py`, and the prompt says what goes in
+  each. Adding or renaming a field means changing the schema, the prompt, and the types in
+  `frontend/src/api.ts` together.
+- Tests use a fake Gemini (`backend/tests/fakes.py`) and never call the API.
+  `tests/test_gemini.py` checks what the real client puts on the wire, over a mocked
+  transport; rerun it after upgrading `google-genai`.
+
 ## Code style
 
 - **Python:** `make fmt` formats and autofixes. `make lint` must pass. Ruff config is in

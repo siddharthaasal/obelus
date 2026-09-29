@@ -51,7 +51,8 @@ comes in a later phase.
 
 Click a book's title, or **Read**, to open it. A book reopens on the page where you left off, and
 the library shows how far you've got. **Contents** lists the PDF's table of contents, if it has
-one, and marks the section you're in. The side panel will hold lookups, chat, and highlights.
+one, and marks the section you're in. The side panel holds your
+[lookups](#lookups); chat and highlights come later.
 
 | Key | Action |
 | --- | --- |
@@ -59,9 +60,36 @@ one, and marks the section you're in. The side panel will hold lookups, chat, an
 | `G` | Go to a page (focuses the page number) |
 | `+` / `-` / `0` | Zoom in / out / reset (also with ⌘ or Ctrl) |
 | `[` / `]` | Show or hide the contents / the side panel |
+| `D` / `W` / `E` | Define / Who / Explain the selected text |
+| `Esc` | Clear the selection |
 
 Books can be read while they're still being extracted; only a failed book can't be opened.
 **Inspect this page's text** in the toolbar opens the debug view at the page you're on.
+
+## Lookups
+
+Select a word, a name, or a passage on the page and a small toolbar appears over it:
+
+- **Define** (`D`): what the term means in this book, how its use shifts across the book, and
+  the pages worth reading about it.
+- **Who** (`W`): who the person is, their relation to the author, and how the author uses them
+  here.
+- **Explain** (`E`): the passage in plain language, its key terms, and where it sits in the
+  argument. Longer selections offer only this.
+
+Answers open in the side panel's **Lookups** tab. Their page citations are links: click one to
+jump to the page, which briefly lights up so you can find it. Answers are saved, so looking up
+the same term in the same book again is instant; **Ask again** replaces a saved answer.
+
+Lookups need `GEMINI_API_KEY` in `.env`. When you open a book, its whole text goes into a
+Gemini context cache, so each lookup pays in full only for the question; the cache lasts
+`CACHE_TTL_MINUTES` and is extended while you read. Small books are sent whole with each
+request instead, and a book too long for the model gets the pages around the selection. The
+prompts are plain files in `backend/app/ai/prompts/` (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+`.env.example` is set up for a free API key: a Flash-Lite model (the most generous free
+quota), caching off (the free tier doesn't include it for Flash-Lite), and a cap on how much of
+a book one request sends. With a paid key, its comments say what to change.
 
 ## Everyday commands
 
