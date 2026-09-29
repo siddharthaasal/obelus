@@ -9,7 +9,7 @@ import {
   ScanText,
   TableOfContents,
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
 import {
   type AiStatus,
@@ -22,7 +22,9 @@ import {
   prepareBookContext,
   savePosition,
 } from '../api'
+import ChatPanel from '../panels/ChatPanel'
 import LookupsPanel from '../panels/LookupsPanel'
+import { useChat } from '../panels/useChat'
 import { useLookups } from '../panels/useLookups'
 import { readFlag, readPref, writeFlag, writePref } from '../prefs'
 import {
@@ -35,6 +37,7 @@ import {
   ThemeSwitcher,
 } from '../ui'
 import Contents from './Contents'
+import { currentItem, flatten } from './outline'
 import { type DocumentInfo, PdfReader, type ScaleValue } from './pdf'
 import { actionsFor, displayQuery, type ReaderSelection, trackSelection } from './selection'
 import SelectionPopover from './SelectionPopover'
@@ -65,8 +68,13 @@ export default function ReaderPage() {
   const [tab, setTab] = useState<Tab>(savedTab)
   const [ai, setAi] = useState<AiStatus | null>(null)
   const [selection, setSelection] = useState<ReaderSelection | null>(null)
+  const outline = useMemo(() => flatten(info?.outline ?? []), [info])
   const lookups = useLookups(bookId)
   const { run: requestLookup } = lookups
+  const chat = useChat(bookId)
+  const { showThread: showChat } = chat
+  // Bumped to put the cursor in the chat's message box.
+  const [chatFocus, setChatFocus] = useState(0)
 
   const host = useRef<HTMLDivElement>(null)
   const reader = useRef<PdfReader | null>(null)
@@ -102,6 +110,15 @@ export default function ReaderPage() {
   useEffect(() => {
     if (book?.status === 'ready' && ai?.configured) prepareBookContext(book.id).catch(() => {})
   }, [book, ai])
+
+  // The same for chat's model, once the chat is opened.
+  const chatShown = panelOpen && tab === 'chat'
+  const chatWarmed = useRef<number | null>(null)
+  useEffect(() => {
+    if (!chatShown || book?.status !== 'ready' || !ai?.configured || chatWarmed.current === book.id) return
+    chatWarmed.current = book.id
+    if (ai.model_deep !== ai.model_fast) prepareBookContext(book.id, 'chat').catch(() => {})
+  }, [chatShown, book, ai])
 
   // Open the PDF once the book is known: at the requested page, else where you left off.
   useEffect(() => {
@@ -204,6 +221,15 @@ export default function ReaderPage() {
     [requestLookup, changeTab, clearSelection],
   )
 
+  /** Open the chat with the cursor in its message box. */
+  const startTyping = useCallback(() => {
+    changeTab('chat')
+    setPanelOpen(true)
+    writeFlag(PANEL_PREF, true)
+    showChat()
+    setChatFocus((n) => n + 1)
+  }, [changeTab, showChat])
+
   // Citations jump to their page and mark it, so the eye can find where it landed.
   const goToCited = useCallback((n: number) => {
     reader.current?.goToPage(n)
@@ -240,6 +266,7 @@ export default function ReaderPage() {
         k: () => r.previousPage(),
         '[': toggleContents,
         ']': togglePanel,
+        c: startTyping,
         g: () => pageInput.current?.focus(),
         '=': () => r.zoom(1),
         '+': () => r.zoom(1),
@@ -254,7 +281,7 @@ export default function ReaderPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [toggleContents, togglePanel, clearSelection, lookUp])
+  }, [toggleContents, togglePanel, clearSelection, lookUp, startTyping])
 
   if (error && error.kind !== 'pdf') {
     return (
@@ -273,6 +300,7 @@ export default function ReaderPage() {
   const pageCount = info?.pageCount ?? book?.page_count ?? 1
   const shown = page ?? 1
   const label = info?.labels?.[shown - 1]
+  const section = currentItem(outline, shown)?.title.trim() || null
 
   return (
     <div className="reader">
@@ -433,6 +461,18 @@ export default function ReaderPage() {
                 labels={info?.labels ?? null}
                 pageCount={pageCount}
                 onGo={goToCited}
+              />
+            }
+            chat={
+              <ChatPanel
+                chat={chat}
+                ai={ai}
+                page={shown}
+                section={section}
+                labels={info?.labels ?? null}
+                pageCount={pageCount}
+                onGo={goToCited}
+                focusKey={chatFocus}
               />
             }
           />

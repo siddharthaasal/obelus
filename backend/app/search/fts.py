@@ -17,6 +17,19 @@ _TERM_PAGES = """
     ORDER BY page_number
 """
 
+# Any of the question's words (stemmed, stopwords dropped) rather than all of them. ts_rank
+# gives diminishing returns for repeats of one word, so pages matching more of the question's
+# words rank first.
+_QUESTION_PAGES = """
+    WITH q AS (
+        SELECT replace(plainto_tsquery('english', :question)::text, '&', '|')::tsquery AS query
+    )
+    SELECT page_number FROM pages, q
+    WHERE book_id = :book_id AND tsv @@ q.query
+    ORDER BY ts_rank(tsv, q.query) DESC, page_number
+    LIMIT :limit
+"""
+
 
 @dataclass(frozen=True)
 class TermHits:
@@ -43,3 +56,12 @@ def _spread(items: list[int], limit: int) -> list[int]:
         return items
     step = (len(items) - 1) / (limit - 1)
     return [items[round(i * step)] for i in range(limit)]
+
+
+def question_pages(session: Session, book_id: int, question: str, limit: int = 12) -> list[int]:
+    """The pages of a book that best match a question's words, best first. A stand-in for
+    semantic retrieval, which comes with embeddings."""
+    if not any(ch.isalnum() for ch in question):
+        return []
+    params = {"book_id": book_id, "question": question, "limit": limit}
+    return list(session.exec(text(_QUESTION_PAGES), params=params).scalars())

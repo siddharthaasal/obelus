@@ -1,6 +1,7 @@
 import { ChevronRight, TableOfContents, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Button, cx, EmptyState } from '../ui'
+import { currentItem, flatten } from './outline'
 import type { OutlineItem } from './pdf'
 
 type Props = {
@@ -123,19 +124,6 @@ function Node({ item, depth, current, labels, expandAll, onSelect }: NodeProps) 
       )}
     </li>
   )
-}
-
-function flatten(items: OutlineItem[]): OutlineItem[] {
-  return items.flatMap((item) => [item, ...flatten(item.items)])
-}
-
-/** The last entry, in reading order, that starts on or before `page`. */
-function currentItem(flat: OutlineItem[], page: number): OutlineItem | null {
-  let found: OutlineItem | null = null
-  for (const item of flat) {
-    if (item.page !== null && item.page <= page) found = item
-  }
-  return found
 }
 
 function contains(item: OutlineItem, target: OutlineItem): boolean {

@@ -50,10 +50,15 @@ without a restart. Code fills the `{{name}}` placeholders (a missing one raises)
 file's header says what it's for and which placeholders it gets.
 
 - `system.md` is cached with each book's text, so changing it rebuilds a book's cache at its
-  next lookup: one full-price read of the book.
+  next lookup: one full-price read of the book. Lookups and chat share it.
+- Chat sends `chat.md` ahead of the conversation, and wraps each of the reader's messages in
+  `question.md`. `chat_excerpts.md` introduces a long book's excerpts, as `excerpts.md` does for
+  lookups.
 - An answer's fields are fixed by `backend/app/ai/schemas.py`, and the prompt says what goes in
   each. Adding or renaming a field means changing the schema, the prompt, and the types in
   `frontend/src/api.ts` together.
+- Chat answers stream: `app/ai/replies.py` writes each in its own thread, and the request only
+  follows its events, so answers survive a closed tab. The events are documented there.
 - Tests use a fake Gemini (`backend/tests/fakes.py`) and never call the API.
   `tests/test_gemini.py` checks what the real client puts on the wire, over a mocked
   transport; rerun it after upgrading `google-genai`.

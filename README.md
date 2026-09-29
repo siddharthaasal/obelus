@@ -51,8 +51,8 @@ comes in a later phase.
 
 Click a book's title, or **Read**, to open it. A book reopens on the page where you left off, and
 the library shows how far you've got. **Contents** lists the PDF's table of contents, if it has
-one, and marks the section you're in. The side panel holds your
-[lookups](#lookups); chat and highlights come later.
+one, and marks the section you're in. The side panel holds your [lookups](#lookups) and
+[chats](#chat); highlights come later.
 
 | Key | Action |
 | --- | --- |
@@ -61,6 +61,7 @@ one, and marks the section you're in. The side panel holds your
 | `+` / `-` / `0` | Zoom in / out / reset (also with ⌘ or Ctrl) |
 | `[` / `]` | Show or hide the contents / the side panel |
 | `D` / `W` / `E` | Define / Who / Explain the selected text |
+| `C` | Chat: open it and start typing (`Esc` hands the keys back to the book) |
 | `Esc` | Clear the selection |
 
 Books can be read while they're still being extracted; only a failed book can't be opened.
@@ -86,6 +87,29 @@ Gemini context cache, so each lookup pays in full only for the question; the cac
 `CACHE_TTL_MINUTES` and is extended while you read. Small books are sent whole with each
 request instead, and a book too long for the model gets the pages around the selection. The
 prompts are plain files in `backend/app/ai/prompts/` (see [CONTRIBUTING.md](CONTRIBUTING.md)).
+
+## Chat
+
+The side panel's **Chat** tab (`C`) is for talking the book through: what a chapter argues, how
+two passages connect, whether you've read something right. Each question goes to `MODEL_DEEP`
+with the book, the conversation so far, and the page you're on (and its section, if the PDF has
+a table of contents), so "here" and "this chapter" mean what you'd expect. The answer streams
+in as it's written, with its page citations as links. Each question keeps a link to the page
+you asked it from.
+
+- **Stop** ends an answer early and keeps what it wrote. **Ask again** (on the last answer)
+  replaces it with a new one.
+- An answer is finished and saved even if you close the book while it's being written; reopen
+  the chat and it picks up where it is.
+- A book reopens on its most recent chat. **All chats** lists the others; the pen starts a new
+  one. Deleting a chat can't be undone.
+- For a book too long to send whole, the model gets the pages around yours, the pages that best
+  match your question's words, and the pages its last answer cited. Answers say when they're
+  working from excerpts.
+
+With `MODEL_DEEP` different from `MODEL_FAST` and caching on, the chat keeps its own Gemini
+cache of the book, made the first time you open the Chat tab. `CHAT_THINKING` trades answer
+quality for how soon the first words arrive.
 
 `.env.example` is set up for a free API key: a Flash-Lite model (the most generous free
 quota), caching off (the free tier doesn't include it for Flash-Lite), and a cap on how much of

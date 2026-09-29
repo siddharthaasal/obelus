@@ -6,7 +6,7 @@ import json
 import httpx
 import pytest
 
-from app.ai.gemini import CacheMissing, Gemini, GeminiError
+from app.ai.gemini import CacheMissing, Gemini, GeminiError, Turn
 from app.ai.schemas import DefineResult
 
 ANSWER = {
@@ -16,6 +16,37 @@ ANSWER = {
     "across_book": None,
     "key_pages": [{"page": 1, "note": "Introduced"}],
 }
+
+
+STREAM = [
+    {
+        "candidates": [
+            {
+                "content": {
+                    "role": "model",
+                    "parts": [
+                        {"text": "Weighing the passage…", "thought": True},
+                        {"text": "Negation drives "},
+                    ],
+                }
+            }
+        ],
+    },
+    {
+        "candidates": [
+            {
+                "content": {"role": "model", "parts": [{"text": "thought [p. 1]."}]},
+                "finishReason": "STOP",
+            }
+        ],
+        "usageMetadata": {
+            "promptTokenCount": 52000,
+            "cachedContentTokenCount": 51234,
+            "candidatesTokenCount": 12,
+            "thoughtsTokenCount": 30,
+        },
+    },
+]
 
 
 def error(code: int, status: str, message: str) -> httpx.Response:
@@ -29,12 +60,16 @@ class Wire:
 
     def __init__(self):
         self.requests: list[tuple[str, str, dict | None]] = []
+        self.queries: list[str] = []
         self.next_error: httpx.Response | None = None
+        # What a streamed answer sends, one server-sent event per chunk.
+        self.chunks: list[dict] = STREAM
 
     def __call__(self, request: httpx.Request) -> httpx.Response:
         body = json.loads(request.content) if request.content else None
         path = request.url.path
         self.requests.append((request.method, path, body))
+        self.queries.append(request.url.query.decode())
         if self.next_error is not None:
             response, self.next_error = self.next_error, None
             return response
@@ -50,6 +85,11 @@ class Wire:
         if request.method == "PATCH":
             return httpx.Response(
                 200, json={"name": "cachedContents/abc", "expireTime": "2026-09-29T13:00:00Z"}
+            )
+        if path.endswith(":streamGenerateContent"):
+            events = "".join(f"data: {json.dumps(c)}\r\n\r\n" for c in self.chunks)
+            return httpx.Response(
+                200, headers={"content-type": "text/event-stream"}, content=events.encode()
             )
         if path.endswith(":generateContent"):
             return httpx.Response(
@@ -154,3 +194,56 @@ def test_errors(client, wire):
     )
     with pytest.raises(GeminiError, match="no answer"):
         client.generate("m", DefineResult, contents=["q"])
+
+
+def test_stream(client, wire):
+    turns = [
+        Turn("user", ("<book>", "instructions", "first question")),
+        Turn("model", ("first answer",)),
+        Turn("user", ("second question",)),
+    ]
+    stream = client.stream("gemini-3.1-pro-preview", turns=turns, system="SYS", thinking="high")
+    assert wire.requests == []  # nothing is sent until it's read
+    # Thought parts stay out of the answer.
+    assert list(stream) == ["Negation drives ", "thought [p. 1]."]
+    assert stream.complete
+    assert stream.usage.as_dict() == {"input": 52000, "cached": 51234, "output": 12, "thinking": 30}
+
+    _, path, body = wire.requests[-1]
+    assert path.endswith("/models/gemini-3.1-pro-preview:streamGenerateContent")
+    assert wire.queries[-1] == "alt=sse"
+    assert body["contents"] == [
+        {
+            "role": "user",
+            "parts": [{"text": "<book>"}, {"text": "instructions"}, {"text": "first question"}],
+        },
+        {"role": "model", "parts": [{"text": "first answer"}]},
+        {"role": "user", "parts": [{"text": "second question"}]},
+    ]
+    assert body["systemInstruction"]["parts"] == [{"text": "SYS"}]
+    assert body["generationConfig"] == {"thinkingConfig": {"thinking_level": "HIGH"}}
+
+
+def test_stream_with_a_cache_and_its_endings(client, wire):
+    turns = [Turn("user", ("q",))]
+    wire.chunks = [
+        {**STREAM[1], "candidates": [{**STREAM[1]["candidates"][0], "finishReason": "MAX_TOKENS"}]}
+    ]
+    stream = client.stream("m", turns=turns, system="SYS", cache_name="cachedContents/abc")
+    assert list(stream) == ["thought [p. 1]."]
+    assert not stream.complete
+    body = wire.requests[-1][2]
+    assert body["cachedContent"] == "cachedContents/abc"
+    assert "systemInstruction" not in body
+
+    wire.next_error = error(403, "PERMISSION_DENIED", "CachedContent not found")
+    with pytest.raises(CacheMissing):
+        list(client.stream("m", turns=turns, cache_name="cachedContents/old"))
+
+    wire.next_error = error(429, "RESOURCE_EXHAUSTED", "Quota exceeded")
+    with pytest.raises(GeminiError, match="rate limit"):
+        list(client.stream("m", turns=turns))
+
+    wire.chunks = [{"promptFeedback": {"blockReason": "SAFETY"}}]
+    with pytest.raises(GeminiError, match="no answer .blocked"):
+        list(client.stream("m", turns=turns))

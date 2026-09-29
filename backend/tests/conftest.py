@@ -22,6 +22,9 @@ os.environ["LIBRARY_SCAN_SECONDS"] = "0"
 os.environ["CONTEXT_CACHING"] = "true"
 os.environ["MAX_BOOK_TOKENS"] = "0"  # no cap
 os.environ["LOOKUP_THINKING"] = "low"
+os.environ["CHAT_THINKING"] = "default"
+os.environ["MODEL_FAST"] = "gemini-test-flash"
+os.environ["MODEL_DEEP"] = "gemini-test-pro"
 
 from app.config import Settings  # noqa: E402
 
@@ -46,7 +49,7 @@ _ensure_test_database()
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from app.ai import context  # noqa: E402
+from app.ai import context, replies  # noqa: E402
 from app.ai import gemini as gemini_module  # noqa: E402
 from app.config import get_settings  # noqa: E402
 from app.db import engine  # noqa: E402
@@ -75,6 +78,7 @@ def client(app_client: TestClient) -> TestClient:
         d.mkdir(parents=True)
     library._known_duplicates.clear()
     context._uncacheable.clear()
+    replies._running.clear()
     return app_client
 
 

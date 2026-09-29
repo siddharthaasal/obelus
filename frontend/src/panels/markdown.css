@@ -1,0 +1,41 @@
+/* A chat answer's prose. Sized like lookups: 15px at 1.6, grey text, no bold above 590. */
+
+.md {
+  display: grid;
+  gap: var(--spacing-12);
+  color: var(--fg-body);
+  font-size: var(--text-body-sm);
+  line-height: 1.6;
+  letter-spacing: var(--tracking-body);
+  overflow-wrap: break-word;
+}
+.md ul,
+.md ol {
+  display: grid;
+  gap: var(--spacing-4);
+  margin: 0;
+  padding-left: var(--spacing-20);
+}
+.md ul {
+  list-style: disc;
+}
+.md ol {
+  list-style: decimal;
+}
+.md li::marker {
+  color: var(--fg-faint);
+}
+.md strong,
+.md-heading {
+  color: var(--fg-strong);
+  font-weight: var(--font-weight-semibold);
+}
+.md-heading {
+  font-weight: var(--font-weight-medium);
+}
+.md blockquote {
+  margin: 0;
+  padding-left: var(--spacing-12);
+  border-left: 2px solid var(--border-strong);
+  color: var(--fg-muted);
+}

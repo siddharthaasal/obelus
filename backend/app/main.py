@@ -7,7 +7,7 @@ from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import ai, books, health, library, lookups
+from app.api import ai, books, chat, health, library, lookups
 from app.config import BACKEND_DIR, FRONTEND_DIST, get_settings
 from app.ingest.worker import worker
 
@@ -42,6 +42,7 @@ api.include_router(books.router)
 api.include_router(library.router)
 api.include_router(lookups.router)
 api.include_router(ai.router)
+api.include_router(chat.router)
 app.include_router(api)
 
 

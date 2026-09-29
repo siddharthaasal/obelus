@@ -16,6 +16,19 @@
   outline: none;
   border-color: var(--border-focus);
 }
+.textarea {
+  display: block;
+  height: auto;
+  min-height: 32px;
+  padding: 6px var(--spacing-12);
+  line-height: 1.45;
+  resize: vertical;
+}
+.textarea-grow {
+  max-height: 200px;
+  overflow-y: auto;
+  resize: none;
+}
 .input-compact {
   height: 26px;
   padding: 0 var(--spacing-8);
