@@ -1,3 +1,4 @@
+import { Highlighter, NotebookPen } from 'lucide-react'
 import { useLayoutEffect, useRef } from 'react'
 import type { LookupKind } from '../api'
 import { KINDS } from '../panels/kinds'
@@ -7,13 +8,15 @@ import { actionsFor, type ReaderSelection } from './selection'
 type Props = {
   selection: ReaderSelection
   onAction: (kind: LookupKind) => void
+  /** Highlight the selection, and with a note, open it to type in. */
+  onHighlight: (withNote: boolean) => void
 }
 
 const GAP = 8
 const MARGIN = 8
 
 /** The actions for a selection, floating above it (below, near the top edge). */
-export default function SelectionPopover({ selection, onAction }: Props) {
+export default function SelectionPopover({ selection, onAction, onHighlight }: Props) {
   const ref = useRef<HTMLDivElement>(null)
 
   useLayoutEffect(() => {
@@ -53,7 +56,7 @@ export default function SelectionPopover({ selection, onAction }: Props) {
       ref={ref}
       className="selection-popover"
       role="toolbar"
-      aria-label="Look up the selection"
+      aria-label="Actions for the selection"
       // A mousedown here would clear the selection before the click lands.
       onMouseDown={(e) => e.preventDefault()}
     >
@@ -66,6 +69,15 @@ export default function SelectionPopover({ selection, onAction }: Props) {
           </Button>
         )
       })}
+      <span className="selection-popover-divider" aria-hidden />
+      <Button variant="ghost" size="sm" icon={Highlighter} title="Highlight (H)" onClick={() => onHighlight(false)}>
+        Highlight
+        <Kbd>H</Kbd>
+      </Button>
+      <Button variant="ghost" size="sm" icon={NotebookPen} title="Highlight with a note (N)" onClick={() => onHighlight(true)}>
+        Note
+        <Kbd>N</Kbd>
+      </Button>
     </div>
   )
 }

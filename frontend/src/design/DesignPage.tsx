@@ -25,6 +25,7 @@ import {
   PageRef,
   SegmentedControl,
   StatusIcon,
+  Swatches,
   Switch,
   Textarea,
   Toasts,
@@ -95,6 +96,7 @@ export default function DesignPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [switchOn, setSwitchOn] = useState(true)
   const [note, setNote] = useState('')
+  const [ink, setInk] = useState<'yellow' | 'green' | 'blue' | 'pink'>('yellow')
   const [tab, setTab] = useState<'lookups' | 'chat' | 'highlights'>('lookups')
   const hex = readTokens(PALETTE.map((name) => `--color-${name}`))
 
@@ -259,6 +261,19 @@ export default function DesignPage() {
           <div className="demo-row">
             <Input compact mono defaultValue="42" size={4} className="demo-compact" aria-label="Page" />
             <Switch label="Page image" checked={switchOn} onChange={() => setSwitchOn((v) => !v)} />
+          </div>
+          <div className="demo-row">
+            <Swatches
+              label="Highlight colour"
+              value={ink}
+              onChange={setInk}
+              options={[
+                { value: 'yellow', label: 'Yellow', color: 'var(--highlight-yellow)' },
+                { value: 'green', label: 'Green', color: 'var(--highlight-green)' },
+                { value: 'blue', label: 'Blue', color: 'var(--highlight-blue)' },
+                { value: 'pink', label: 'Pink', color: 'var(--highlight-pink)' },
+              ]}
+            />
           </div>
           <div className="demo-row">
             <SegmentedControl

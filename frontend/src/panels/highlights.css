@@ -1,0 +1,120 @@
+/* The Highlights panel: highlights grouped under their page, in reading order. */
+
+.highlights-bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  height: 40px;
+  padding: 0 var(--spacing-8) 0 var(--spacing-16);
+  border-bottom: var(--hairline) solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+.highlights-count {
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+}
+.highlights-message {
+  padding: var(--spacing-12) var(--spacing-16) 0;
+}
+
+.highlight-pages {
+  display: grid;
+  gap: var(--spacing-16);
+  margin: 0;
+  padding: var(--spacing-12) var(--spacing-12) var(--spacing-24);
+  list-style: none;
+}
+.highlight-page {
+  margin: 0 0 var(--spacing-6) var(--spacing-4);
+}
+.highlight-list {
+  display: grid;
+  gap: var(--spacing-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.highlight-item {
+  display: grid;
+  gap: var(--spacing-8);
+  padding: var(--spacing-12) var(--spacing-12) var(--spacing-6);
+  border-radius: var(--radius-card);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--duration-fast) var(--ease-out);
+}
+.highlight-item.is-focused {
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+/* The passage, marked with its ink down the left edge. */
+.highlight-quote {
+  display: -webkit-box;
+  padding: 0 0 0 var(--spacing-12);
+  overflow: hidden;
+  border: 0;
+  border-left: 3px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--fg-body);
+  font-size: var(--text-caption);
+  line-height: 1.55;
+  text-align: left;
+  white-space: pre-line;
+  cursor: pointer;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+}
+.highlight-quote:hover {
+  color: var(--fg-strong);
+}
+.ink-yellow {
+  --ink: var(--highlight-yellow);
+}
+.ink-green {
+  --ink: var(--highlight-green);
+}
+.ink-blue {
+  --ink: var(--highlight-blue);
+}
+.ink-pink {
+  --ink: var(--highlight-pink);
+}
+
+.highlight-note {
+  color: var(--fg-strong);
+  font-size: var(--text-ui);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.highlight-editor {
+  display: grid;
+  gap: var(--spacing-4);
+}
+.highlight-editor-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex-wrap: wrap;
+  color: var(--fg-faint);
+  font-size: var(--text-label);
+}
+
+.highlight-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  margin-left: calc(-1 * var(--spacing-4));
+}
+.highlight-actions-end {
+  display: flex;
+  align-items: center;
+}
