@@ -1,0 +1,209 @@
+/*
+ * Design tokens. See DESIGN.md at the repo root for how to use them.
+ *
+ * Two layers:
+ *   1. Primitives (--color-*, raw scales) are Linear's palette, named as in the reference, plus
+ *      two additions for the light theme. Only this file refers to them.
+ *   2. Semantic tokens (--bg-*, --fg-*, --border-*, --accent, --status-*) are what components
+ *      and pages use. Each colour is written once as light-dark(light, dark).
+ *
+ * Themes: light-dark() follows the root's color-scheme. By default that's the system setting;
+ * <html data-theme="light|dark"> pins one (set by ui/theme.ts, and before first paint by
+ * index.html).
+ */
+
+:root {
+  color-scheme: light dark;
+}
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+:root {
+  /* Primitives: Linear's palette */
+  --color-void: #08090a;
+  --color-carbon: #0f1011;
+  --color-obsidian: #161718;
+  --color-graphite: #23252a;
+  --color-smoke: #383b3f;
+  --color-ash: #62666d;
+  --color-fog: #8a8f98;
+  --color-mist: #d0d6e0;
+  --color-bone: #e5e5e6;
+  --color-paper: #ffffff;
+  --color-acid-lime: #e4f222;
+  --color-pulse-green: #27a644;
+  --color-coral-red: #eb5757;
+  --color-signal-teal: #02b8cc;
+  --color-iris-violet: #6366f1;
+  --color-lavender: #8b5cf6;
+  /* Primitives: light theme additions. The rest of light reuses the grey ramp, inverted. */
+  --color-porcelain: #f7f8f8;
+  --color-lagoon: #0a8fa0; /* signal teal, deep enough for 3:1 on white */
+
+  /* Surfaces. In both themes, higher surfaces sit closer to the light. */
+  --bg-canvas: light-dark(var(--color-porcelain), var(--color-void));
+  --bg-surface: light-dark(var(--color-paper), var(--color-carbon));
+  --bg-raised: light-dark(var(--color-paper), var(--color-obsidian));
+  --bg-slate: light-dark(var(--color-bone), var(--color-graphite));
+  /* Fills for inputs and secondary buttons */
+  --bg-control: light-dark(var(--color-paper), rgb(255 255 255 / 0.02));
+  /* Translucent washes, for states that sit on any surface */
+  --bg-subtle: light-dark(rgb(0 0 0 / 0.02), rgb(255 255 255 / 0.02));
+  --bg-tint: light-dark(rgb(0 0 0 / 0.05), rgb(255 255 255 / 0.05));
+  --bg-hover: light-dark(rgb(0 0 0 / 0.04), rgb(255 255 255 / 0.04));
+  --bg-active: light-dark(rgb(0 0 0 / 0.07), rgb(255 255 255 / 0.07));
+  --bg-backdrop: light-dark(rgb(8 9 10 / 0.24), rgb(0 0 0 / 0.6));
+  /* Rendered book pages stay white in both themes */
+  --bg-book-page: var(--color-paper);
+
+  /* Foreground (text and icons), strongest to weakest. Body copy is never chromatic. */
+  --fg-primary: light-dark(var(--color-void), var(--color-paper));
+  --fg-strong: light-dark(var(--color-obsidian), var(--color-bone));
+  --fg-body: light-dark(var(--color-smoke), var(--color-mist));
+  --fg-muted: light-dark(var(--color-ash), var(--color-fog));
+  --fg-faint: light-dark(var(--color-fog), var(--color-ash));
+  --fg-on-accent: var(--color-void);
+
+  /* Borders */
+  --border-subtle: light-dark(var(--color-bone), var(--color-graphite));
+  --border-strong: light-dark(var(--color-mist), var(--color-smoke));
+  --border-input: light-dark(rgb(0 0 0 / 0.12), rgb(255 255 255 / 0.08));
+  --border-focus: light-dark(var(--color-smoke), var(--color-mist));
+
+  /* The one chromatic action color. One primary action per view. */
+  --accent: var(--color-acid-lime);
+  --accent-hover: light-dark(
+    color-mix(in srgb, var(--color-acid-lime), black 6%),
+    color-mix(in srgb, var(--color-acid-lime), white 22%)
+  );
+  /* Lime is nearly as light as white, so on a light canvas it needs an edge */
+  --accent-edge: light-dark(rgb(0 0 0 / 0.14), transparent);
+
+  /* Status and tags: icons, badges, and dots only, never body text */
+  --status-done: var(--color-pulse-green);
+  --status-danger: var(--color-coral-red);
+  --status-progress: light-dark(var(--color-lagoon), var(--color-signal-teal));
+  --status-info: light-dark(var(--color-lagoon), var(--color-signal-teal));
+  --status-idle: var(--fg-muted);
+  --tag-violet: var(--color-iris-violet);
+  --tag-lavender: var(--color-lavender);
+  /* Tinted text (badges, danger button) mixes its hue toward this to stay legible */
+  --tone-shift: light-dark(black, white);
+
+  --selection: light-dark(
+    color-mix(in srgb, var(--color-iris-violet) 24%, transparent),
+    color-mix(in srgb, var(--color-iris-violet) 38%, transparent)
+  );
+
+  /* Typography */
+  --font-sans:
+    InterVariable, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, sans-serif;
+  --font-mono:
+    'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, monospace;
+  --font-features: 'cv01' on, 'ss03' on, 'zero' on;
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 510;
+  --font-weight-semibold: 590;
+
+  /* Type scale (font sizes). Composite styles are the .text-* classes in base.css. */
+  --text-micro: 10px;
+  --text-label: 12px;
+  --text-caption: 13px;
+  --text-ui: 14px;
+  --text-body-sm: 15px;
+  --text-body: 16px;
+  --text-body-lg: 17px;
+  --text-emphasis: 20px;
+  --text-title: 24px;
+  --text-heading-sm: 32px;
+  --text-heading: 48px;
+  --text-heading-lg: 64px;
+  --text-display: 72px;
+
+  --tracking-display: -0.022em;
+  --tracking-heading: -0.012em;
+  --tracking-body: -0.011em;
+  --tracking-ui: -0.01em;
+  --tracking-mono: -0.013em;
+
+  /* Spacing: 4px base, compact density */
+  --spacing-2: 2px;
+  --spacing-4: 4px;
+  --spacing-6: 6px;
+  --spacing-8: 8px;
+  --spacing-12: 12px;
+  --spacing-16: 16px;
+  --spacing-20: 20px;
+  --spacing-24: 24px;
+  --spacing-28: 28px;
+  --spacing-32: 32px;
+  --spacing-40: 40px;
+  --spacing-48: 48px;
+  --spacing-56: 56px;
+  --spacing-64: 64px;
+  --spacing-80: 80px;
+  --spacing-96: 96px;
+  --spacing-128: 128px;
+
+  /* Radii: the whole vocabulary */
+  --radius-small: 2px;
+  --radius-badge: 4px;
+  --radius-control: 6px;
+  --radius-card: 12px;
+  --radius-pill: 9999px;
+
+  /* Borders are hairlines: 1px, or 0.5px on high-density screens (below) */
+  --hairline: 1px;
+
+  /* Elevation comes from surface steps and hairlines, not drop shadows */
+  --shadow-card: inset 0 0 0 1px var(--border-subtle);
+  --shadow-sm: 0 2px 4px 0 light-dark(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.4));
+  --shadow-primary:
+    inset 0 0 0 1px var(--accent-edge), 0 5px 2px 0 rgb(0 0 0 / 0.01),
+    0 3px 2px 0 rgb(0 0 0 / 0.04), 0 1px 1px 0 rgb(0 0 0 / 0.07), 0 0 1px 0 rgb(0 0 0 / 0.08);
+  --shadow-overlay:
+    inset 0 0 0 1px light-dark(transparent, rgb(255 255 255 / 0.03)),
+    inset 0 1px 0 0 light-dark(transparent, rgb(255 255 255 / 0.04)),
+    0 0 0 1px light-dark(rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.6)),
+    0 4px 32px 0 light-dark(rgb(8 9 10 / 0.14), rgb(8 9 10 / 0.6));
+
+  /* Motion: short and quiet */
+  --duration-fast: 120ms;
+  --duration-normal: 180ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Layout */
+  --page-max-width: 1200px;
+  --content-max-width: 960px;
+  --prose-max-width: 68ch;
+  --topbar-height: 48px;
+  --page-gutter: var(--spacing-24);
+  --section-gap: var(--spacing-96);
+  --card-padding: var(--spacing-24);
+  --element-gap: var(--spacing-8);
+
+  /* Layers */
+  --z-sticky: 10;
+  --z-overlay: 40;
+  --z-toast: 50;
+}
+
+@media (min-resolution: 2dppx) {
+  :root {
+    --hairline: 0.5px;
+  }
+}
+
+@media (max-width: 560px) {
+  :root {
+    --page-gutter: var(--spacing-16);
+  }
+}

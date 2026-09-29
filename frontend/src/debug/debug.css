@@ -1,0 +1,148 @@
+.debug-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-12) var(--spacing-24);
+  margin: var(--spacing-20) 0 var(--spacing-16);
+  padding-top: var(--spacing-16);
+  border-top: var(--hairline) solid var(--border-subtle);
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+.page-input {
+  width: auto;
+  text-align: center;
+}
+.pager-of {
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+}
+.pager-keys {
+  display: inline-flex;
+  gap: var(--spacing-2);
+  margin-left: var(--spacing-6);
+}
+
+.debug-stats {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: var(--spacing-4);
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+}
+.debug-stats > span + span::before {
+  content: '·';
+  margin: 0 var(--spacing-6);
+  color: var(--fg-faint);
+}
+.debug-stats > .badge {
+  margin-left: var(--spacing-8);
+}
+
+.debug-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-12);
+  align-items: start;
+  margin-top: var(--spacing-16);
+}
+.debug-cols.with-image {
+  grid-template-columns: minmax(0, 0.9fr) 1fr 1fr;
+}
+.debug-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  max-height: calc(100vh - var(--topbar-height) - 196px);
+  overflow: hidden;
+}
+.debug-col-title {
+  flex-shrink: 0;
+  padding: var(--spacing-8) var(--spacing-16);
+  border-bottom: var(--hairline) solid var(--border-subtle);
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.5;
+}
+.debug-col-body {
+  min-height: 0;
+  padding: var(--spacing-16);
+  overflow: auto;
+}
+.debug-subhead {
+  margin: var(--spacing-24) 0 var(--spacing-8);
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-medium);
+}
+
+.page-image {
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-small);
+  background: var(--bg-book-page);
+  box-shadow:
+    0 0 0 1px var(--border-subtle),
+    var(--shadow-sm);
+}
+
+.raw {
+  margin: 0;
+  color: var(--fg-body);
+  font-size: var(--text-label);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Paragraphs are outlined so reflow mistakes are easy to spot. */
+.clean p {
+  margin: 0 0 var(--spacing-8);
+  padding: var(--spacing-2) 0 var(--spacing-2) var(--spacing-12);
+  border-left: 1px solid var(--border-strong);
+}
+.clean.notes p {
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+}
+
+.removed {
+  display: grid;
+  gap: var(--spacing-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.removed li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-8);
+}
+.removed .badge {
+  flex-shrink: 0;
+}
+.removed-text {
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .debug-cols,
+  .debug-cols.with-image {
+    grid-template-columns: 1fr;
+  }
+  .debug-col {
+    max-height: none;
+  }
+  .pager-keys {
+    display: none;
+  }
+}

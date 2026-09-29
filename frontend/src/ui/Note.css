@@ -1,0 +1,19 @@
+.note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-6);
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.note-icon {
+  margin-top: 2px;
+  color: var(--status-info);
+}
+.note-error {
+  color: var(--fg-body);
+}
+.note-error .note-icon {
+  color: var(--status-danger);
+}

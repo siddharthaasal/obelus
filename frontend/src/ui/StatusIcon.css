@@ -1,0 +1,46 @@
+.status-icon {
+  flex-shrink: 0;
+  overflow: visible;
+}
+.status-icon-idle {
+  color: var(--status-idle);
+}
+.status-icon-progress {
+  color: var(--status-progress);
+}
+.status-icon-done {
+  color: var(--status-done);
+}
+.status-icon-error {
+  color: var(--status-danger);
+}
+
+.status-icon .ring {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.status-icon .ring.dashed {
+  stroke-dasharray: 2 1.77;
+}
+.status-icon .pie,
+.status-icon .disc {
+  fill: currentColor;
+}
+.status-icon .mark {
+  fill: none;
+  stroke: var(--bg-canvas);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.status-icon-progress .pie {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: status-sweep 2.4s linear infinite;
+}
+@keyframes status-sweep {
+  to {
+    transform: rotate(1turn);
+  }
+}

@@ -1,0 +1,86 @@
+.btn {
+  --btn-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-6);
+  height: var(--btn-height);
+  padding: 0 var(--spacing-12);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--fg-body);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-regular);
+  line-height: 1;
+  letter-spacing: var(--tracking-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.btn-sm {
+  --btn-height: 26px;
+  gap: var(--spacing-4);
+  padding: 0 var(--spacing-8);
+  font-size: var(--text-label);
+}
+.btn-icon {
+  width: var(--btn-height);
+  padding: 0;
+}
+
+/* Acid lime: one per view. */
+.btn-primary {
+  background: var(--accent);
+  color: var(--fg-on-accent);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: var(--tracking-body);
+  box-shadow: var(--shadow-primary);
+}
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+.btn-primary:active:not(:disabled) {
+  background: color-mix(in srgb, var(--accent), black 8%);
+}
+
+.btn-secondary {
+  background: var(--bg-control);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-hover);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+  color: var(--fg-strong);
+}
+
+.btn-ghost {
+  color: var(--fg-muted);
+}
+.btn-ghost:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--fg-body);
+}
+
+.btn-secondary:active:not(:disabled),
+.btn-ghost:active:not(:disabled) {
+  background: var(--bg-active);
+}
+
+.btn-danger {
+  background: color-mix(in srgb, var(--status-danger) 14%, transparent);
+  color: color-mix(in srgb, var(--status-danger), var(--tone-shift) 30%);
+  font-weight: var(--font-weight-medium);
+}
+.btn-danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--status-danger) 22%, transparent);
+}

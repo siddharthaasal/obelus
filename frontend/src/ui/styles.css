@@ -1,0 +1,9 @@
+/* Global entry for the design system: fonts, tokens, base. Import once, in main.tsx. */
+
+/* Official Inter build: fontsource's copy strips cv01, ss03 and zero, which the system relies on. */
+@import 'inter-ui/inter-variable.css';
+/* Stands in for Berkeley Mono. */
+@import '@fontsource-variable/jetbrains-mono';
+
+@import './tokens.css';
+@import './base.css';
