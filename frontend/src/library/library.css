@@ -59,6 +59,12 @@
   overflow-wrap: anywhere;
 }
 
+.book-title a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+}
+
 .book-meta {
   display: flex;
   align-items: baseline;

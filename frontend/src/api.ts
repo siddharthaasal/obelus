@@ -89,6 +89,12 @@ export function uploadBook(file: File) {
   return request<{ book: Book; duplicate: boolean }>('/books', { method: 'POST', body: form })
 }
 
+export const bookFileUrl = (id: number) => `/api/books/${id}/file`
+
+/** Save the reading position. `keepalive` lets the request finish while the page unloads. */
+export const savePosition = (id: number, page: number, { keepalive = false } = {}) =>
+  request<void>(`/books/${id}/position`, { ...json('PUT', { page }), keepalive })
+
 export const getPage = (bookId: number, n: number) => request<Page>(`/books/${bookId}/pages/${n}`)
 export const pageImageUrl = (bookId: number, n: number, dpi = 110) =>
   `/api/books/${bookId}/pages/${n}/image?dpi=${dpi}`

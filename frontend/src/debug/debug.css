@@ -13,10 +13,6 @@
   align-items: center;
   gap: var(--spacing-6);
 }
-.page-input {
-  width: auto;
-  text-align: center;
-}
 .pager-of {
   color: var(--fg-muted);
   font-size: var(--text-caption);

@@ -1,5 +1,6 @@
-import { Pencil, RotateCw, ScanText, Trash2 } from 'lucide-react'
+import { BookOpen, Pencil, RotateCw, ScanText, Trash2 } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
+import { Link } from 'react-router'
 import { type Book, updateBook } from '../api'
 import {
   Badge,
@@ -33,20 +34,31 @@ export default function BookRow({ book, onReprocess, onRemove, onSaved }: Props)
   const [dialog, setDialog] = useState<'edit' | 'remove' | null>(null)
   const close = () => setDialog(null)
   const status = STATUS[book.status]
+  // Reading only needs the PDF; a failed book is usually one pdf.js can't open either.
+  const readable = book.status !== 'failed'
+  const readerUrl = `/books/${book.id}`
 
   return (
     <li className="book-row">
       <StatusIcon state={status.state} progress={status.progress} label={status.label} />
       <div className="book-main">
         <div className="book-title-row">
-          <h2 className="book-title">{book.title}</h2>
+          <h2 className="book-title">
+            {readable ? <Link to={readerUrl}>{book.title}</Link> : book.title}
+          </h2>
           {book.status !== 'ready' && (
             <Badge tone={book.status === 'failed' ? 'red' : 'neutral'}>{status.label}</Badge>
           )}
         </div>
         <p className="book-meta">
           {book.author && <span className="book-author">{book.author}</span>}
-          {book.page_count ? <span className="tabular">{book.page_count} pages</span> : null}
+          {book.page_count ? (
+            <span className="tabular">
+              {book.last_read_page
+                ? `Page ${book.last_read_page} of ${book.page_count}`
+                : `${book.page_count} pages`}
+            </span>
+          ) : null}
           <span className="book-file text-mono" title={book.file_name}>
             {book.file_name}
           </span>
@@ -61,10 +73,20 @@ export default function BookRow({ book, onReprocess, onRemove, onSaved }: Props)
       </div>
 
       <div className="book-actions">
-        {book.status === 'ready' && (
-          <ButtonLink to={`/books/${book.id}/debug/1`} variant="ghost" size="sm" icon={ScanText}>
-            Inspect text
+        {readable && (
+          <ButtonLink to={readerUrl} variant="ghost" size="sm" icon={BookOpen}>
+            {book.last_read_page ? 'Continue' : 'Read'}
           </ButtonLink>
+        )}
+        {book.status === 'ready' && (
+          <ButtonLink
+            to={`/books/${book.id}/debug/${book.last_read_page ?? 1}`}
+            variant="ghost"
+            size="sm"
+            icon={ScanText}
+            aria-label="Inspect text"
+            title="Inspect extracted text"
+          />
         )}
         <Button
           variant="ghost"

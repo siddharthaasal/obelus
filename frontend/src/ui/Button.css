@@ -76,6 +76,13 @@
   background: var(--bg-active);
 }
 
+/* Toggles (aria-pressed): a panel that's open, a mode that's on. */
+.btn-secondary[aria-pressed='true'],
+.btn-ghost[aria-pressed='true'] {
+  background: var(--bg-active);
+  color: var(--fg-strong);
+}
+
 .btn-danger {
   background: color-mix(in srgb, var(--status-danger) 14%, transparent);
   color: color-mix(in srgb, var(--status-danger), var(--tone-shift) 30%);

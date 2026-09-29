@@ -172,6 +172,19 @@ def test_edit_title_and_author(client, tmp_path):
     assert client.patch(f"/api/books/{book_id}", json={"title": "  "}).status_code == 422
 
 
+def test_save_reading_position(client, tmp_path):
+    book = upload(client, make_book_pdf(tmp_path / "b.pdf")).json()["book"]
+    assert book["last_read_page"] is None
+    assert client.put(f"/api/books/{book['id']}/position", json={"page": 2}).status_code == 204
+    saved = client.get(f"/api/books/{book['id']}").json()
+    assert saved["last_read_page"] == 2
+    assert saved["updated_at"] == book["updated_at"]  # reading doesn't count as an edit
+    over = book["page_count"] + 1
+    assert client.put(f"/api/books/{book['id']}/position", json={"page": over}).status_code == 422
+    assert client.put(f"/api/books/{book['id']}/position", json={"page": 0}).status_code == 422
+    assert client.put("/api/books/999/position", json={"page": 1}).status_code == 404
+
+
 def test_page_image_and_file(client, run_jobs, tmp_path):
     book_id = upload(client, make_book_pdf(tmp_path / "b.pdf")).json()["book"]["id"]
     res = client.get(f"/api/books/{book_id}/pages/2/image?dpi=50")
