@@ -1,0 +1,35 @@
+# Contributing
+
+## Running
+
+`make setup` once, then `make dev` while working: the Vite dev server with hot reload on
+http://127.0.0.1:5173, and the API with auto-reload behind it. `make run` serves the production
+build the way you'll actually use it.
+
+## Schema changes
+
+Both of us have real data, so every schema change is an Alembic migration, never a manual edit in
+`psql`.
+
+1. Add or change a SQLModel table in `backend/app/models/`, and import new modules in
+   `backend/app/models/__init__.py` so Alembic can see them.
+2. `make revision m="add books table"` autogenerates a file in `backend/migrations/versions/`.
+3. Read the generated file. Autogenerate misses some things (extensions, generated columns, some
+   index types, renames). Fix it by hand with `op.execute(...)` where needed.
+4. `make migrate`, or just restart the app, since it migrates on startup.
+5. Commit the migration together with the model change.
+
+If you both add a migration on separate branches, Alembic will report multiple heads after the
+merge. Run `cd backend && uv run alembic merge heads -m "merge"` and commit the result.
+
+Take a `make backup` before pulling someone else's migrations if your library matters to you.
+
+## Code style
+
+- **Python:** `make fmt` formats and autofixes. `make lint` must pass. Ruff config is in
+  `backend/pyproject.toml`.
+- **TypeScript:** oxlint and `tsc` via `make lint`.
+- **Prompts:** plain files in `backend/app/ai/prompts/`, so either of us can tune them without
+  touching code.
+- **Dependencies:** `cd backend && uv add <pkg>`, and `cd frontend && npm install <pkg>`. Commit
+  the lockfiles.

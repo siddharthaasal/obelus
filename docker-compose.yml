@@ -1,0 +1,25 @@
+# Postgres + pgvector for local use. The app itself runs on the host (make run).
+# A fixed project name keeps one database across clones and git worktrees.
+name: obelus
+
+services:
+  db:
+    image: pgvector/pgvector:pg18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: obelus
+      POSTGRES_PASSWORD: obelus
+      POSTGRES_DB: obelus
+    ports:
+      # Loopback only: there is no auth story beyond this machine.
+      - "127.0.0.1:${POSTGRES_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U obelus -d obelus"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  pgdata:
