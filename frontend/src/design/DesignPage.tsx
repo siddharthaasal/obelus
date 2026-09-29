@@ -22,6 +22,7 @@ import {
   Kbd,
   Note,
   PageHeader,
+  PageRef,
   SegmentedControl,
   StatusIcon,
   Switch,
@@ -83,6 +84,9 @@ const TYPE: [className: string, name: string, spec: string][] = [
 ]
 
 const SPACING = [4, 8, 12, 16, 24, 32, 48, 64, 96]
+
+// Printed page numbers for a book whose numbering starts on PDF page 15.
+const DEMO_LABELS = Array.from({ length: 200 }, (_, i) => (i < 14 ? `${i + 1}` : `${i - 13}`))
 
 /** Live reference for the design system. Not linked from the app; open /design. */
 export default function DesignPage() {
@@ -225,6 +229,18 @@ export default function DesignPage() {
             <Kbd>K</Kbd>
           </span>
         </div>
+      </Section>
+
+      <Section
+        title="Page references"
+        note="Citations in AI answers: the printed page number when the PDF has one, jumping to the PDF page."
+      >
+        <p className="prose">
+          Hegel calls this determinate negation{' '}
+          <PageRef page={51} labels={DEMO_LABELS} onGo={(n) => show('info', `Jump to PDF page ${n}.`)} /> and returns
+          to it in the chapter on force{' '}
+          <PageRef page={112} end={114} labels={DEMO_LABELS} onGo={(n) => show('info', `Jump to PDF page ${n}.`)} />.
+        </p>
       </Section>
 
       <Section title="Forms">

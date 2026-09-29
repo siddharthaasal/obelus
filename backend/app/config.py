@@ -14,6 +14,8 @@ class Settings(BaseSettings):
         env_file=REPO_ROOT / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        # A blank line in .env (MODEL_FAST=) means "use the default", not "empty string".
+        env_ignore_empty=True,
     )
 
     gemini_api_key: str = ""
@@ -22,11 +24,19 @@ class Settings(BaseSettings):
     app_host: str = "127.0.0.1"
     app_port: int = 8420
 
-    model_fast: str = ""
-    model_deep: str = ""
-    embed_model: str = ""
+    model_fast: str = "gemini-3.8-flash"
+    model_deep: str = "gemini-3.1-pro-preview"
+    embed_model: str = "gemini-embedding-001"
     embed_dim: int = 768
     cache_ttl_minutes: int = 60
+    # Thinking level for lookups (low, medium, high), or "default" to leave it to the model.
+    lookup_thinking: str = "low"
+    # Keep an open book in a Gemini explicit cache. The free tier doesn't offer it on every
+    # model; off, the book goes with each request instead.
+    context_caching: bool = True
+    # Most tokens of book text sent with one request; longer books get excerpts around the
+    # selection. Unset or 0: whatever fits the model's context window.
+    max_book_tokens: int | None = None
 
     # Background ingestion. Tests turn the worker off and run jobs directly.
     worker_enabled: bool = True
@@ -36,6 +46,14 @@ class Settings(BaseSettings):
     @classmethod
     def _expand_data_dir(cls, v: Path) -> Path:
         return v.expanduser().resolve()
+
+    @field_validator("lookup_thinking", mode="after")
+    @classmethod
+    def _check_thinking(cls, v: str) -> str:
+        v = v.strip().lower()
+        if v not in ("minimal", "low", "medium", "high", "default"):
+            raise ValueError("LOOKUP_THINKING must be minimal, low, medium, high, or default")
+        return v
 
     @property
     def library_dir(self) -> Path:

@@ -4,12 +4,14 @@ from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException, Query, Response, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Response, UploadFile, status
 from fastapi.responses import FileResponse
 from pydantic import field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Field, SQLModel, select, update
 
+from app.ai.context import delete_remote_caches
+from app.api.deps import get_book_or_404
 from app.config import get_settings
 from app.db import SessionDep
 from app.ingest.extract import PdfError, render_page_png
@@ -25,7 +27,7 @@ from app.ingest.library import (
     unique_path,
 )
 from app.ingest.worker import worker
-from app.models import Book, BookStatus, Page
+from app.models import Book, BookStatus, GeminiCache, Page
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -82,13 +84,6 @@ class PageOut(SQLModel):
     is_ocr: bool
 
 
-def _get_book(session: SessionDep, book_id: int) -> Book:
-    book = session.get(Book, book_id)
-    if book is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Book not found")
-    return book
-
-
 @router.get("")
 def list_books(session: SessionDep) -> list[BookOut]:
     books = session.exec(select(Book).order_by(Book.created_at.desc(), Book.id.desc())).all()
@@ -138,12 +133,12 @@ def upload_book(file: UploadFile, session: SessionDep, response: Response) -> Up
 
 @router.get("/{book_id}")
 def get_book(book_id: int, session: SessionDep) -> BookOut:
-    return BookOut.of(_get_book(session, book_id))
+    return BookOut.of(get_book_or_404(session, book_id))
 
 
 @router.patch("/{book_id}")
 def update_book(book_id: int, changes: BookUpdate, session: SessionDep) -> BookOut:
-    book = _get_book(session, book_id)
+    book = get_book_or_404(session, book_id)
     for key, value in changes.model_dump(exclude_unset=True).items():
         setattr(book, key, value or None if key == "author" else value)
     session.commit()
@@ -154,7 +149,7 @@ def update_book(book_id: int, changes: BookUpdate, session: SessionDep) -> BookO
 @router.put("/{book_id}/position", status_code=status.HTTP_204_NO_CONTENT)
 def save_position(book_id: int, position: PositionIn, session: SessionDep) -> None:
     """Remember the page the reader is on, so the book reopens there."""
-    book = _get_book(session, book_id)
+    book = get_book_or_404(session, book_id)
     if book.page_count is not None and position.page > book.page_count:
         raise HTTPException(
             status.HTTP_422_UNPROCESSABLE_CONTENT, f"The book has {book.page_count} pages"
@@ -169,10 +164,12 @@ def save_position(book_id: int, position: PositionIn, session: SessionDep) -> No
 
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_book(book_id: int, session: SessionDep) -> None:
+def delete_book(book_id: int, session: SessionDep, background: BackgroundTasks) -> None:
     """Remove a book. Its PDF moves to DATA_DIR/trash rather than being deleted."""
-    book = _get_book(session, book_id)
+    book = get_book_or_404(session, book_id)
     path = library_path(book)
+    caches = session.exec(select(GeminiCache.cache_name).where(GeminiCache.book_id == book_id))
+    cache_names = list(caches.all())
     session.delete(book)
     session.flush()
     trashed = move_to_trash(path)
@@ -182,12 +179,15 @@ def delete_book(book_id: int, session: SessionDep) -> None:
         if trashed:
             shutil.move(trashed, path)
         raise
+    # Stop paying to store the book's Gemini caches instead of waiting for them to expire.
+    if cache_names:
+        background.add_task(delete_remote_caches, cache_names)
 
 
 @router.post("/{book_id}/reprocess", status_code=status.HTTP_202_ACCEPTED)
 def reprocess_book(book_id: int, session: SessionDep) -> BookOut:
     """Re-run extraction and cleanup, e.g. after changing cleanup rules."""
-    book = _get_book(session, book_id)
+    book = get_book_or_404(session, book_id)
     enqueue(session, "ingest", book_id=book.id)
     if book.status in (BookStatus.ready, BookStatus.failed):
         book.status = BookStatus.queued
@@ -200,7 +200,7 @@ def reprocess_book(book_id: int, session: SessionDep) -> BookOut:
 
 @router.get("/{book_id}/file")
 def book_file(book_id: int, session: SessionDep) -> FileResponse:
-    book = _get_book(session, book_id)
+    book = get_book_or_404(session, book_id)
     path = library_path(book)
     if not path.exists():
         raise HTTPException(status.HTTP_404_NOT_FOUND, "The PDF is missing from the library")
@@ -211,7 +211,7 @@ def book_file(book_id: int, session: SessionDep) -> FileResponse:
 
 @router.get("/{book_id}/pages/{page_number}")
 def get_page(book_id: int, page_number: int, session: SessionDep) -> PageOut:
-    _get_book(session, book_id)
+    get_book_or_404(session, book_id)
     # Explicit columns: skip the tsvectors.
     row = session.exec(
         select(
@@ -237,7 +237,7 @@ def page_image(
     session: SessionDep,
     dpi: Annotated[int, Query(ge=36, le=300)] = 110,
 ) -> Response:
-    path = library_path(_get_book(session, book_id))
+    path = library_path(get_book_or_404(session, book_id))
     try:
         png = render_page_png(path, page_number, dpi)
     except (IndexError, PdfError) as e:

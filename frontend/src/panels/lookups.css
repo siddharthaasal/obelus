@@ -1,0 +1,192 @@
+/* The Lookups panel: a stack of cards, the newest on top. */
+
+.lookups {
+  display: grid;
+  gap: var(--spacing-8);
+  margin: 0;
+  padding: var(--spacing-12);
+  list-style: none;
+}
+.lookups-message {
+  padding: var(--spacing-16);
+}
+.lookups-setup {
+  margin-top: var(--spacing-8);
+  text-align: left;
+}
+
+.lookup {
+  min-width: 0;
+  background: var(--bg-raised);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.lookup-head {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  min-height: 40px;
+  padding: var(--spacing-6) var(--spacing-6) var(--spacing-6) var(--spacing-8);
+}
+.lookup-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-4);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.lookup-toggle:hover .lookup-title {
+  color: var(--fg-primary);
+}
+.lookup-chevron {
+  flex-shrink: 0;
+  color: var(--fg-faint);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.lookup.is-open .lookup-chevron {
+  transform: rotate(90deg);
+}
+.lookup-icon {
+  flex-shrink: 0;
+  color: var(--fg-muted);
+}
+.lookup-kind {
+  flex-shrink: 0;
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+}
+.lookup-title {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--fg-strong);
+  font-size: var(--text-ui);
+  font-weight: var(--font-weight-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lookup-title.is-passage {
+  font-weight: var(--font-weight-regular);
+}
+.lookup-title.is-passage::before {
+  content: '“';
+}
+
+/* Row actions appear on hover or focus, as in library rows. Touch screens always show them. */
+.lookup-actions {
+  display: flex;
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.lookup:hover .lookup-actions,
+.lookup:focus-within .lookup-actions {
+  opacity: 1;
+}
+@media (hover: none) {
+  .lookup-actions {
+    opacity: 1;
+  }
+}
+
+.lookup-preview {
+  display: -webkit-box;
+  margin: calc(-1 * var(--spacing-4)) var(--spacing-16) var(--spacing-12) var(--spacing-40);
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.lookup-status {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-8);
+  padding: 0 var(--spacing-16) var(--spacing-16);
+}
+p.lookup-status {
+  display: flex;
+  align-items: center;
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+}
+
+.lookup-body {
+  display: grid;
+  gap: var(--spacing-16);
+  padding: var(--spacing-4) var(--spacing-16) var(--spacing-16);
+}
+.lookup-section-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-8);
+  margin-bottom: var(--spacing-4);
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-medium);
+}
+.lookup-text {
+  color: var(--fg-body);
+  font-size: var(--text-body-sm);
+  line-height: 1.6;
+  letter-spacing: var(--tracking-body);
+  overflow-wrap: break-word;
+}
+
+.lookup-quote {
+  display: -webkit-box;
+  margin: 0;
+  padding-left: var(--spacing-12);
+  overflow: hidden;
+  border-left: 2px solid var(--border-strong);
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+}
+
+.lookup-pages {
+  display: grid;
+  gap: var(--spacing-6);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-caption);
+  line-height: 1.45;
+  letter-spacing: var(--tracking-ui);
+}
+.lookup-pages li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--spacing-8);
+}
+
+.lookup-terms {
+  display: grid;
+  gap: var(--spacing-8);
+  margin: 0;
+}
+.lookup-terms dt {
+  color: var(--fg-strong);
+  font-weight: var(--font-weight-medium);
+}
+.lookup-terms dd {
+  margin: 0;
+}
+
+.lookup-meta {
+  color: var(--fg-faint);
+  font-size: 11px;
+}

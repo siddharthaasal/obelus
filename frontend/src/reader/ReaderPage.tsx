@@ -11,7 +11,19 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
-import { ApiError, type Book, bookFileUrl, getBook, savePosition } from '../api'
+import {
+  type AiStatus,
+  ApiError,
+  type Book,
+  bookFileUrl,
+  getAiStatus,
+  getBook,
+  type LookupKind,
+  prepareBookContext,
+  savePosition,
+} from '../api'
+import LookupsPanel from '../panels/LookupsPanel'
+import { useLookups } from '../panels/useLookups'
 import { readFlag, readPref, writeFlag, writePref } from '../prefs'
 import {
   Button,
@@ -24,13 +36,17 @@ import {
 } from '../ui'
 import Contents from './Contents'
 import { type DocumentInfo, PdfReader, type ScaleValue } from './pdf'
-import SidePanel from './SidePanel'
+import { actionsFor, displayQuery, type ReaderSelection, trackSelection } from './selection'
+import SelectionPopover from './SelectionPopover'
+import SidePanel, { type Tab } from './SidePanel'
 import './reader.css'
 
 const SAVE_DELAY_MS = 1000
 const CONTENTS_PREF = 'obelus.reader.contents'
 const PANEL_PREF = 'obelus.reader.panel'
+const TAB_PREF = 'obelus.reader.tab'
 const scalePref = (bookId: number) => `obelus.reader.scale.${bookId}`
+const LOOKUP_KEYS: Record<string, LookupKind> = { d: 'define', w: 'who', e: 'explain' }
 
 export default function ReaderPage() {
   const bookId = Number(useParams().bookId)
@@ -46,12 +62,19 @@ export default function ReaderPage() {
   const [scale, setScale] = useState<{ percent: number; value: ScaleValue }>({ percent: 100, value: 'auto' })
   const [contentsOpen, setContentsOpen] = useState(() => readFlag(CONTENTS_PREF, false))
   const [panelOpen, setPanelOpen] = useState(() => readFlag(PANEL_PREF, window.innerWidth >= 1200))
+  const [tab, setTab] = useState<Tab>(savedTab)
+  const [ai, setAi] = useState<AiStatus | null>(null)
+  const [selection, setSelection] = useState<ReaderSelection | null>(null)
+  const lookups = useLookups(bookId)
+  const { run: requestLookup } = lookups
 
   const host = useRef<HTMLDivElement>(null)
   const reader = useRef<PdfReader | null>(null)
   const pageInput = useRef<HTMLInputElement>(null)
   // The page on screen (0 until known) and the last one saved, for the save on leave.
   const position = useRef({ page: 0, saved: 0 })
+  // The selection, for keyboard shortcuts.
+  const selected = useRef<ReaderSelection | null>(null)
 
   useEffect(() => {
     getBook(bookId)
@@ -68,6 +91,17 @@ export default function ReaderPage() {
   useEffect(() => {
     if (searchParams.has('page')) setSearchParams({}, { replace: true })
   }, [searchParams, setSearchParams])
+
+  useEffect(() => {
+    getAiStatus()
+      .then(setAi)
+      .catch(() => {})
+  }, [])
+
+  // Get the book into Gemini's cache while the reader settles in, so the first lookup is quick.
+  useEffect(() => {
+    if (book?.status === 'ready' && ai?.configured) prepareBookContext(book.id).catch(() => {})
+  }, [book, ai])
 
   // Open the PDF once the book is known: at the requested page, else where you left off.
   useEffect(() => {
@@ -90,7 +124,12 @@ export default function ReaderPage() {
     reader.current = r
     r.open(bookFileUrl(book.id), { page: start, scale: parseScale(readPref(scalePref(book.id))) })
     r.container.focus({ preventScroll: true })
+    const stopTracking = trackSelection(r.container, (s) => {
+      selected.current = s
+      setSelection(s)
+    })
     return () => {
+      stopTracking()
       r.destroy()
       reader.current = null
     }
@@ -140,6 +179,36 @@ export default function ReaderPage() {
       }),
     [],
   )
+  const changeTab = useCallback((next: Tab) => {
+    setTab(next)
+    writePref(TAB_PREF, next)
+  }, [])
+
+  const clearSelection = useCallback(() => {
+    document.getSelection()?.removeAllRanges()
+    selected.current = null
+    setSelection(null)
+  }, [])
+
+  /** Look up the selection, and show the answer in the panel. */
+  const lookUp = useCallback(
+    (kind: LookupKind) => {
+      const s = selected.current
+      if (!s || !actionsFor(s).includes(kind)) return
+      requestLookup({ kind, page: s.page, text: s.raw, before: s.before, after: s.after }, displayQuery(kind, s))
+      changeTab('lookups')
+      setPanelOpen(true)
+      writeFlag(PANEL_PREF, true)
+      clearSelection()
+    },
+    [requestLookup, changeTab, clearSelection],
+  )
+
+  // Citations jump to their page and mark it, so the eye can find where it landed.
+  const goToCited = useCallback((n: number) => {
+    reader.current?.goToPage(n)
+    reader.current?.flashPage(n)
+  }, [])
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -156,6 +225,16 @@ export default function ReaderPage() {
         return
       }
       if (mod || e.altKey) return
+      if (e.key === 'Escape' && selected.current) {
+        clearSelection()
+        return
+      }
+      const lookupKind = LOOKUP_KEYS[e.key.toLowerCase()]
+      if (lookupKind && selected.current) {
+        e.preventDefault()
+        lookUp(lookupKind)
+        return
+      }
       const actions: Record<string, () => void> = {
         j: () => r.nextPage(),
         k: () => r.previousPage(),
@@ -175,7 +254,7 @@ export default function ReaderPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [toggleContents, togglePanel])
+  }, [toggleContents, togglePanel, clearSelection, lookUp])
 
   if (error && error.kind !== 'pdf') {
     return (
@@ -322,6 +401,7 @@ export default function ReaderPage() {
         )}
         <main className="reader-stage">
           <div ref={host} className="reader-host" />
+          {selection && <SelectionPopover selection={selection} onAction={lookUp} />}
           {error?.kind === 'pdf' ? (
             <div className="reader-overlay">
               <EmptyState
@@ -341,10 +421,30 @@ export default function ReaderPage() {
             )
           )}
         </main>
-        {panelOpen && <SidePanel onClose={togglePanel} />}
+        {panelOpen && (
+          <SidePanel
+            tab={tab}
+            onTabChange={changeTab}
+            onClose={togglePanel}
+            lookups={
+              <LookupsPanel
+                lookups={lookups}
+                ai={ai}
+                labels={info?.labels ?? null}
+                pageCount={pageCount}
+                onGo={goToCited}
+              />
+            }
+          />
+        )}
       </div>
     </div>
   )
+}
+
+function savedTab(): Tab {
+  const saved = readPref(TAB_PREF)
+  return saved === 'chat' || saved === 'highlights' ? saved : 'lookups'
 }
 
 function parseScale(saved: string | null): ScaleValue {

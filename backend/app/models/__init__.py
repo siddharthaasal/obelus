@@ -5,7 +5,18 @@ Alembic autogenerates migrations.
 """
 
 from app.models.book import Book, BookStatus
+from app.models.gemini_cache import GeminiCache
 from app.models.job import Job, JobStatus
+from app.models.lookup import Lookup, LookupKind
 from app.models.page import Page
 
-__all__ = ["Book", "BookStatus", "Job", "JobStatus", "Page"]
+__all__ = [
+    "Book",
+    "BookStatus",
+    "GeminiCache",
+    "Job",
+    "JobStatus",
+    "Lookup",
+    "LookupKind",
+    "Page",
+]

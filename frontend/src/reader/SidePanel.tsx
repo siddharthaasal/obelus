@@ -1,9 +1,8 @@
 import { Highlighter, type LucideIcon, MessageSquare, Search, X } from 'lucide-react'
-import { useState } from 'react'
-import { readPref, writePref } from '../prefs'
+import type { ReactNode } from 'react'
 import { Badge, Button, EmptyState, type SegmentOption, SegmentedControl } from '../ui'
 
-type Tab = 'lookups' | 'chat' | 'highlights'
+export type Tab = 'lookups' | 'chat' | 'highlights'
 
 const TABS: SegmentOption<Tab>[] = [
   { value: 'lookups', label: 'Lookups', icon: Search },
@@ -11,13 +10,8 @@ const TABS: SegmentOption<Tab>[] = [
   { value: 'highlights', label: 'Highlights', icon: Highlighter },
 ]
 
-// What each tab will hold. They're empty until selection actions, chat, and highlights land.
-const PLACEHOLDER: Record<Tab, { icon: LucideIcon; title: string; body: string }> = {
-  lookups: {
-    icon: Search,
-    title: 'Lookups',
-    body: 'Select a term, a name, or a passage to get its meaning in this book, who the person is, or a plain explanation, with page citations.',
-  },
+// What the tabs that aren't built yet will hold.
+const PLACEHOLDER: Record<Exclude<Tab, 'lookups'>, { icon: LucideIcon; title: string; body: string }> = {
   chat: {
     icon: MessageSquare,
     title: 'Chat',
@@ -30,33 +24,29 @@ const PLACEHOLDER: Record<Tab, { icon: LucideIcon; title: string; body: string }
   },
 }
 
-const TAB_PREF = 'obelus.reader.tab'
+type Props = {
+  tab: Tab
+  onTabChange: (tab: Tab) => void
+  onClose: () => void
+  lookups: ReactNode
+}
 
-export default function SidePanel({ onClose }: { onClose: () => void }) {
-  const [tab, setTab] = useState<Tab>(() => {
-    const saved = readPref(TAB_PREF)
-    return TABS.some((t) => t.value === saved) ? (saved as Tab) : 'lookups'
-  })
-  const placeholder = PLACEHOLDER[tab]
-
+export default function SidePanel({ tab, onTabChange, onClose, lookups }: Props) {
+  const placeholder = tab === 'lookups' ? null : PLACEHOLDER[tab]
   return (
     <aside className="reader-side reader-panel" aria-label="Side panel">
       <div className="reader-side-head">
-        <SegmentedControl
-          label="Panel"
-          options={TABS}
-          value={tab}
-          onChange={(next) => {
-            setTab(next)
-            writePref(TAB_PREF, next)
-          }}
-        />
+        <SegmentedControl label="Panel" options={TABS} value={tab} onChange={onTabChange} />
         <Button variant="ghost" size="sm" icon={X} aria-label="Close panel" title="Close (])" onClick={onClose} />
       </div>
       <div className="reader-side-body">
-        <EmptyState icon={placeholder.icon} title={placeholder.title} actions={<Badge>Not built yet</Badge>}>
-          <p>{placeholder.body}</p>
-        </EmptyState>
+        {placeholder ? (
+          <EmptyState icon={placeholder.icon} title={placeholder.title} actions={<Badge>Not built yet</Badge>}>
+            <p>{placeholder.body}</p>
+          </EmptyState>
+        ) : (
+          lookups
+        )}
       </div>
     </aside>
   )
