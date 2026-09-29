@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     embed_dim: int = 768
     cache_ttl_minutes: int = 60
 
+    # Background ingestion. Tests turn the worker off and run jobs directly.
+    worker_enabled: bool = True
+    library_scan_seconds: float = 10.0
+
     @field_validator("data_dir", mode="after")
     @classmethod
     def _expand_data_dir(cls, v: Path) -> Path:
@@ -40,6 +44,10 @@ class Settings(BaseSettings):
     @property
     def backups_dir(self) -> Path:
         return self.data_dir / "backups"
+
+    @property
+    def tmp_dir(self) -> Path:
+        return self.data_dir / "tmp"
 
 
 @lru_cache

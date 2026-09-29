@@ -8,6 +8,10 @@ dependencies = [
     "fastapi>=0.141.1",
     "psycopg[binary]>=3.3.6",
     "pydantic-settings>=2.15.0",
+    "pymupdf>=1.28.2",
+    "pyspellchecker>=0.9.0",
+    "python-multipart>=0.0.32",
+    "rapidfuzz>=3.14.6",
     "sqlmodel>=0.0.47",
     "uvicorn[standard]>=0.54.0",
 ]
@@ -31,8 +35,10 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.ruff.lint.per-file-ignores]
 # Keep op/sa/sqlmodel imports in generated migrations for hand edits.
-"migrations/versions/*" = ["F401"]
+"migrations/versions/*" = ["F401", "E501"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+# PyMuPDF's SWIG bindings warn on import. (Don't turn warnings into errors: it segfaults.)
+filterwarnings = ["ignore:builtin type .* has no __module__ attribute:DeprecationWarning"]

@@ -7,8 +7,9 @@ from fastapi import APIRouter, FastAPI, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import health
+from app.api import books, health, library
 from app.config import BACKEND_DIR, FRONTEND_DIST, get_settings
+from app.ingest.worker import worker
 
 log = logging.getLogger("uvicorn.error")
 
@@ -23,21 +24,30 @@ def run_migrations() -> None:
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     settings = get_settings()
-    settings.library_dir.mkdir(parents=True, exist_ok=True)
-    settings.backups_dir.mkdir(parents=True, exist_ok=True)
+    for d in (settings.library_dir, settings.backups_dir, settings.tmp_dir):
+        d.mkdir(parents=True, exist_ok=True)
     run_migrations()
     log.info("data dir: %s", settings.data_dir)
+    if settings.worker_enabled:
+        worker.start()
     yield
+    await worker.stop()
 
 
 app = FastAPI(title="Obelus", lifespan=lifespan)
 
 api = APIRouter(prefix="/api")
 api.include_router(health.router)
+api.include_router(books.router)
+api.include_router(library.router)
 app.include_router(api)
 
 
-@app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])
+@app.api_route(
+    "/api/{path:path}",
+    methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    include_in_schema=False,
+)
 def api_not_found(path: str):
     # Keep unknown /api routes from falling through to the SPA below.
     raise HTTPException(status_code=404, detail=f"No API route /api/{path}")
