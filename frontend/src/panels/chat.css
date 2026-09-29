@@ -1,0 +1,201 @@
+/* The Chat panel: a bar, the conversation, and the message box pinned to the bottom. The
+   panel body scrolls; the bar and the box stick to its edges. */
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.chat-bar {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  height: 40px;
+  padding: 0 var(--spacing-8);
+  border-bottom: var(--hairline) solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+.chat-bar-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-thread {
+  flex: 1;
+}
+.chat-message-box {
+  padding: var(--spacing-16);
+}
+.chat-setup {
+  margin-top: var(--spacing-8);
+  text-align: left;
+}
+.chat-suggestions {
+  display: grid;
+  justify-items: center;
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-12);
+}
+
+.chat-messages {
+  display: grid;
+  gap: var(--spacing-20);
+  margin: 0;
+  padding: var(--spacing-16);
+  list-style: none;
+}
+
+/* The reader's questions: a quiet block, with the page they were asked from. */
+.chat-question {
+  display: grid;
+  gap: var(--spacing-6);
+  justify-self: end;
+  max-width: 92%;
+  padding: var(--spacing-8) var(--spacing-12);
+  border-radius: var(--radius-card);
+  background: var(--bg-tint);
+}
+.chat-question-text {
+  color: var(--fg-strong);
+  font-size: var(--text-ui);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.chat-question-place {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  min-width: 0;
+  color: var(--fg-faint);
+  font-size: var(--text-label);
+}
+.chat-question-place span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chat-answer {
+  display: grid;
+  gap: var(--spacing-12);
+  min-width: 0;
+}
+.chat-answer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  min-height: 26px;
+  margin-top: calc(-1 * var(--spacing-4));
+  color: var(--fg-faint);
+  font-size: 11px;
+}
+
+.chat-status {
+  display: grid;
+  justify-items: start;
+  gap: var(--spacing-8);
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+}
+.chat-waiting {
+  display: flex;
+  align-items: center;
+}
+
+.chat-composer {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: var(--spacing-6);
+  padding: var(--spacing-8) var(--spacing-12) var(--spacing-12);
+  border-top: var(--hairline) solid var(--border-subtle);
+  background: var(--bg-surface);
+}
+.chat-composer-row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-8);
+}
+.chat-composer-row .textarea {
+  flex: 1;
+}
+.chat-hint {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  min-width: 0;
+  color: var(--fg-faint);
+  font-size: var(--text-label);
+}
+.chat-hint-section {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* All chats */
+.chat-list {
+  margin: 0;
+  padding: var(--spacing-8);
+  list-style: none;
+}
+.chat-list-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding-right: var(--spacing-4);
+  border-radius: var(--radius-control);
+}
+.chat-list-row:hover {
+  background: var(--bg-hover);
+}
+.chat-list-row.is-current {
+  background: var(--bg-active);
+}
+.chat-list-open {
+  display: grid;
+  gap: var(--spacing-2);
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-8);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.chat-list-title {
+  overflow: hidden;
+  color: var(--fg-strong);
+  font-size: var(--text-caption);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chat-list-meta {
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+}
+.chat-list-row .btn {
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.chat-list-row:hover .btn,
+.chat-list-row:focus-within .btn {
+  opacity: 1;
+}
+@media (hover: none) {
+  .chat-list-row .btn {
+    opacity: 1;
+  }
+}

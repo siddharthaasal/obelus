@@ -5,10 +5,12 @@ Everything else goes through `Gemini`, reached with `require_gemini()`. Tests re
 """
 
 import logging
+from collections.abc import Iterator
 from contextlib import suppress
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from functools import cache
+from typing import Literal
 
 import httpx
 from google import genai
@@ -78,6 +80,59 @@ class Generated[T: BaseModel]:
     usage: Usage
 
 
+@dataclass(frozen=True)
+class Turn:
+    """One side's turn in a conversation. Its parts reach the model as one message."""
+
+    role: Literal["user", "model"]
+    parts: tuple[str, ...]
+
+
+class TextStream:
+    """An answer as it's written. Iterate for the text in pieces; once that ends, `usage` says
+    what it cost and `complete` whether the model finished (rather than hit its output limit
+    or a safety stop). Close it to stop early."""
+
+    def __init__(self, responses: Iterator[types.GenerateContentResponse], uses_cache: bool):
+        self._responses = responses
+        self._uses_cache = uses_cache
+        self.usage = Usage()
+        self.finish_reason: str | None = None
+
+    @property
+    def complete(self) -> bool:
+        return self.finish_reason in (None, "STOP")
+
+    def __iter__(self) -> Iterator[str]:
+        wrote = False
+        last = None
+        while True:
+            # The request goes out at the first chunk, so errors can arrive at any step.
+            response = _call(lambda: next(self._responses, None), self._uses_cache)
+            if response is None:
+                break
+            last = response
+            if response.usage_metadata:
+                self.usage = _usage(response.usage_metadata)
+            candidate = response.candidates[0] if response.candidates else None
+            if candidate is None:
+                continue
+            if candidate.finish_reason:
+                self.finish_reason = candidate.finish_reason.value
+            for part in (candidate.content.parts if candidate.content else None) or []:
+                if part.text and not part.thought:
+                    wrote = True
+                    yield part.text
+        if not wrote:
+            why = _why_empty(last) if last else "empty response"
+            raise GeminiError(f"Gemini returned no answer ({why}). Try again.")
+
+    def close(self) -> None:
+        close = getattr(self._responses, "close", None)
+        if close:
+            close()
+
+
 class Gemini:
     def __init__(self, api_key: str, *, transport: httpx.BaseTransport | None = None):
         """`transport` swaps the HTTP layer, for tests that check what reaches the wire."""
@@ -142,14 +197,12 @@ class Gemini:
     ) -> Generated[T]:
         """Ask for JSON matching `schema`. With `cache_name`, the system prompt comes from the
         cache (Gemini rejects both at once)."""
-        config = types.GenerateContentConfig(
-            system_instruction=None if cache_name else system,
-            cached_content=cache_name,
+        config = _config(
+            system,
+            cache_name,
+            thinking,
             response_mime_type="application/json",
             response_schema=schema,
-            thinking_config=types.ThinkingConfig(thinking_level=thinking) if thinking else None,
-            # No tools are declared; this also stops the SDK logging a warning per request.
-            automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
         )
         response = _call(
             lambda: self._client.models.generate_content(
@@ -165,6 +218,24 @@ class Gemini:
             log.warning("gemini: answer didn't match %s: %s", schema.__name__, e)
             raise GeminiError("Gemini's answer was malformed. Try again.") from e
         return Generated(result=result, usage=_usage(response.usage_metadata))
+
+    def stream(
+        self,
+        model: str,
+        *,
+        turns: list[Turn],
+        system: str | None = None,
+        cache_name: str | None = None,
+        thinking: str | None = None,
+    ) -> TextStream:
+        """Ask for prose, streamed. Nothing is sent until the stream is read."""
+        contents = [
+            types.Content(role=t.role, parts=[types.Part(text=p) for p in t.parts]) for t in turns
+        ]
+        responses = self._client.models.generate_content_stream(
+            model=model, contents=contents, config=_config(system, cache_name, thinking)
+        )
+        return TextStream(responses, uses_cache=cache_name is not None)
 
 
 def gemini_client() -> Gemini | None:
@@ -182,6 +253,19 @@ def require_gemini() -> Gemini:
 @cache
 def _client_for(api_key: str) -> Gemini:
     return Gemini(api_key)
+
+
+def _config(
+    system: str | None, cache_name: str | None, thinking: str | None, **extra
+) -> types.GenerateContentConfig:
+    return types.GenerateContentConfig(
+        system_instruction=None if cache_name else system,
+        cached_content=cache_name,
+        thinking_config=types.ThinkingConfig(thinking_level=thinking) if thinking else None,
+        # No tools are declared; this also stops the SDK logging a warning per request.
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+        **extra,
+    )
 
 
 def _call(fn, uses_cache: bool = False):

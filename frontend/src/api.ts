@@ -107,7 +107,7 @@ export const isBusy = (b: Book) => b.status === 'queued' || b.status === 'extrac
 
 // AI: selection actions (lookups). Answer shapes mirror backend/app/ai/schemas.py.
 
-export type AiStatus = { configured: boolean; model_fast: string; problem: string | null }
+export type AiStatus = { configured: boolean; model_fast: string; model_deep: string; problem: string | null }
 
 export type LookupKind = 'define' | 'who' | 'explain'
 export type PageNote = { page: number; note: string }
@@ -164,11 +164,112 @@ export type LookupRequest = {
 }
 
 export const getAiStatus = () => request<AiStatus>('/ai')
-/** Create or reuse the book's Gemini cache, so the first lookup doesn't wait for it. */
-export const prepareBookContext = (bookId: number) =>
-  request<{ mode: string }>(`/books/${bookId}/context`, { method: 'POST' })
+/** Create or reuse the book's Gemini cache for lookups or chat, so the first request doesn't wait. */
+export const prepareBookContext = (bookId: number, purpose: 'lookups' | 'chat' = 'lookups') =>
+  request<{ mode: string }>(`/books/${bookId}/context?purpose=${purpose}`, { method: 'POST' })
 export const listLookups = (bookId: number) => request<Lookup[]>(`/books/${bookId}/lookups`)
 export const createLookup = (bookId: number, body: LookupRequest) =>
   request<Lookup>(`/books/${bookId}/lookups`, json('POST', body))
 export const deleteLookup = (bookId: number, id: number) =>
   request<void>(`/books/${bookId}/lookups/${id}`, { method: 'DELETE' })
+
+// AI: book chat. Shapes mirror backend/app/api/chat.py; events, backend/app/ai/replies.py.
+
+export type ConversationSummary = {
+  id: number
+  book_id: number
+  title: string
+  message_count: number
+  /** An answer is being written right now; follow it with followReply. */
+  answering: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type ChatMessage = {
+  id: number
+  conversation_id: number
+  role: 'user' | 'assistant'
+  content: string
+  /** Questions: the page the reader was on, and its section in the table of contents. */
+  page_number: number | null
+  section: string | null
+  citations: { book_id: number; page: number; end?: number }[]
+  /** stopped: the reader stopped it partway. truncated: the model ended early. */
+  status: 'complete' | 'stopped' | 'truncated'
+  model: string | null
+  context_mode: 'cached' | 'inline' | 'excerpt' | null
+  created_at: string
+}
+
+export type Conversation = ConversationSummary & { messages: ChatMessage[] }
+
+export type Question = { content: string; page: number; section?: string | null }
+
+/** What a chat stream sends: the saved question (when one was asked), the answer in pieces, then its end. */
+export type ChatEvent =
+  | { event: 'user'; conversation: ConversationSummary; message: ChatMessage }
+  | { event: 'delta'; text: string }
+  | { event: 'done'; message: ChatMessage | null }
+  | { event: 'error'; detail: string; status: number }
+
+const chatPath = (bookId: number, id?: number) => `/books/${bookId}/conversations${id === undefined ? '' : `/${id}`}`
+
+export const listConversations = (bookId: number) => request<ConversationSummary[]>(chatPath(bookId))
+export const getConversation = (bookId: number, id: number) => request<Conversation>(chatPath(bookId, id))
+export const deleteConversation = (bookId: number, id: number) =>
+  request<void>(chatPath(bookId, id), { method: 'DELETE' })
+export const stopReply = (bookId: number, id: number) =>
+  request<void>(`${chatPath(bookId, id)}/stop`, { method: 'POST' })
+
+/** Ask a question: in a new chat without `id`. */
+export const askQuestion = (bookId: number, id: number | null, question: Question, signal?: AbortSignal) =>
+  events(id === null ? chatPath(bookId) : `${chatPath(bookId, id)}/messages`, { ...json('POST', question), signal })
+/** Answer the chat's last question again. */
+export const answerAgain = (bookId: number, id: number, signal?: AbortSignal) =>
+  events(`${chatPath(bookId, id)}/reply`, { method: 'POST', signal })
+/** Follow the answer being written, from its start. */
+export const followReply = (bookId: number, id: number, signal?: AbortSignal) =>
+  events(`${chatPath(bookId, id)}/reply`, { signal })
+
+/**
+ * A server-sent event stream. These are POSTs, which EventSource can't make, so this reads the
+ * stream itself. An error before the stream starts throws ApiError, like any request.
+ */
+async function* events(path: string, init: RequestInit): AsyncGenerator<ChatEvent> {
+  const res = await fetch(`/api${path}`, init)
+  if (!res.ok || !res.body) throw new ApiError(res.status, await errorMessage(res))
+  const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
+  let buffer = ''
+  try {
+    for (;;) {
+      const { value, done } = await reader.read()
+      if (done) return
+      buffer += value.replace(/\r\n/g, '\n')
+      let end
+      while ((end = buffer.indexOf('\n\n')) >= 0) {
+        const block = buffer.slice(0, end)
+        buffer = buffer.slice(end + 2)
+        const event = parseEvent(block)
+        if (event) yield event
+      }
+    }
+  } finally {
+    reader.cancel().catch(() => {})
+  }
+}
+
+function parseEvent(block: string): ChatEvent | null {
+  let name = ''
+  const data: string[] = []
+  for (const line of block.split('\n')) {
+    if (line.startsWith(':')) continue // a keepalive comment
+    const colon = line.indexOf(':')
+    const field = colon < 0 ? line : line.slice(0, colon)
+    const value = colon < 0 ? '' : line.slice(colon + 1).replace(/^ /, '')
+    if (field === 'event') name = value
+    else if (field === 'data') data.push(value)
+  }
+  if (!name || data.length === 0) return null
+  return { event: name, ...JSON.parse(data.join('\n')) } as ChatEvent
+}

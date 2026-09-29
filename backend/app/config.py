@@ -1,7 +1,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import field_validator
+from pydantic import ValidationInfo, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
@@ -29,8 +29,10 @@ class Settings(BaseSettings):
     embed_model: str = "gemini-embedding-001"
     embed_dim: int = 768
     cache_ttl_minutes: int = 60
-    # Thinking level for lookups (low, medium, high), or "default" to leave it to the model.
+    # Thinking level for lookups and for chat (low, medium, high), or "default" to leave it to
+    # the model. Chat thinks harder by default: its answers are open-ended.
     lookup_thinking: str = "low"
+    chat_thinking: str = "default"
     # Keep an open book in a Gemini explicit cache. The free tier doesn't offer it on every
     # model; off, the book goes with each request instead.
     context_caching: bool = True
@@ -47,12 +49,13 @@ class Settings(BaseSettings):
     def _expand_data_dir(cls, v: Path) -> Path:
         return v.expanduser().resolve()
 
-    @field_validator("lookup_thinking", mode="after")
+    @field_validator("lookup_thinking", "chat_thinking", mode="after")
     @classmethod
-    def _check_thinking(cls, v: str) -> str:
+    def _check_thinking(cls, v: str, info: ValidationInfo) -> str:
         v = v.strip().lower()
         if v not in ("minimal", "low", "medium", "high", "default"):
-            raise ValueError("LOOKUP_THINKING must be minimal, low, medium, high, or default")
+            name = (info.field_name or "").upper()
+            raise ValueError(f"{name} must be minimal, low, medium, high, or default")
         return v
 
     @property

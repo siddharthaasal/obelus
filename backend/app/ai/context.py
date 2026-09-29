@@ -7,8 +7,8 @@
 - inline: a book too small for a cache (Gemini has a minimum size), or any book with
   CONTEXT_CACHING off, goes whole with each request.
 - excerpt: a book too long for the model's context window (or for MAX_BOOK_TOKENS) sends the
-  pages around the selection and the pages where the term appears. Retrieval over
-  embeddings replaces this later.
+  pages around the reader's place and the pages that bear on the request: where a looked-up
+  term appears, or what a chat question matches. Retrieval over embeddings replaces this later.
 """
 
 import hashlib
@@ -55,12 +55,15 @@ class BookContext:
     system: str
     cache: GeminiCache | None = None
 
-    def contents(self, session: Session, focus_pages: Iterable[int]) -> list[str]:
-        """What goes ahead of the question: nothing when the book is cached."""
+    def contents(
+        self, session: Session, focus_pages: Iterable[int], excerpts: str = "excerpts"
+    ) -> list[str]:
+        """What goes ahead of the question: nothing when the book is cached. `excerpts` names
+        the prompt that introduces a long book's excerpts."""
         if self.mode == "inline":
             return [book_text(session, self.book_id)]
         if self.mode == "excerpt":
-            return [excerpt_text(session, self.book_id, focus_pages)]
+            return [excerpt_text(session, self.book_id, focus_pages, excerpts)]
         return []
 
 
@@ -126,7 +129,9 @@ def book_text(session: Session, book_id: int) -> str:
     return "<book>\n" + "\n\n".join(blocks) + "\n</book>"
 
 
-def excerpt_text(session: Session, book_id: int, focus_pages: Iterable[int]) -> str:
+def excerpt_text(
+    session: Session, book_id: int, focus_pages: Iterable[int], template: str = "excerpts"
+) -> str:
     """The pages around the first focus page, then the other focus pages, up to a limit."""
     focus = list(focus_pages)
     wanted: dict[int, None] = {}
@@ -143,7 +148,7 @@ def excerpt_text(session: Session, book_id: int, focus_pages: Iterable[int]) -> 
         .order_by(Page.page_number)
     ).all()
     blocks = [_page_block(n, text, notes) for n, text, notes in rows if text or notes]
-    return render("excerpts", pages="\n\n".join(blocks))
+    return render(template, pages="\n\n".join(blocks))
 
 
 def _ensure_cache(

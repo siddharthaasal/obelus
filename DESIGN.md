@@ -131,7 +131,7 @@ marketing-style pages, not the app. Mono is never used for headings or prose.
 | `StatusIcon` | Linear-style status glyph: `idle` (dashed ring), `progress` (filling pie), `done`, `error`. Pass `label` unless visible text says the same thing. |
 | `Card` | A carbon surface with a hairline edge. `padded={false}` for lists whose rows bring their own padding; `as="ul"` for lists. |
 | `PageHeader` | The top of every page: optional breadcrumb, title, an accessory such as a count badge, description, actions. |
-| `Field`, `Input`, `Switch` | Forms. `Input compact mono` for toolbar inputs like the page number. `Switch` is for settings that apply immediately. |
+| `Field`, `Input`, `Textarea`, `Switch` | Forms. `Input compact mono` for toolbar inputs like the page number. `Textarea autoGrow` grows with its text up to 200px, then scrolls. `Switch` is for settings that apply immediately. |
 | `PageInput` | The page number field in the reader and debug view: shows the current page, Enter goes, Escape cancels. |
 | `PageRef` | A page citation, "p. 37" or "pp. 12–14". Shows the printed page number when the PDF has labels and jumps to the PDF page. |
 | `SegmentedControl` | One of a few options, applied immediately: panel tabs, search modes, the theme. Native radios underneath; `iconOnly` turns labels into tooltips. |
@@ -160,6 +160,10 @@ in empty states. Icons are always a single grey, unless they carry status.
 - **Citations** in AI answers are `PageRef`s set inline in the text (`panels/CitedText.tsx`
   turns the model's `[p. N]` into them). Clicking one jumps the reader to the page and briefly
   lights up its frame.
+- **Chat answers** are Markdown, rendered by `panels/Markdown.tsx` as React elements (never
+  HTML): paragraphs, lists, quotes, and emphasis, with citations inline. Bold is 590, like
+  every other weight ceiling. Questions sit in a tinted block with the page they were asked
+  from; answers are plain prose on the panel.
 - **Keyboard shortcuts** appear in button `title` text ("Next page (→ or J)") and, where there's
   room, as `Kbd` hints next to the control. Shortcuts are single keys, ignored while typing in a
   field. `[` and `]` toggle left and right panels, as in Linear.

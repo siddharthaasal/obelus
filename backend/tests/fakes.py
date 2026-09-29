@@ -1,5 +1,6 @@
 """A stand-in for app.ai.gemini.Gemini that records calls and returns canned answers."""
 
+import threading
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -45,6 +46,46 @@ ANSWERS = {
 }
 
 
+# A chat answer, as the pieces it streams in.
+CHAT_PIECES = [
+    "Negation drives ",
+    "thought forward [p. 1]. ",
+    "Hegel makes it determinate [pp. 2–3].",
+]
+
+
+@dataclass
+class FakeStream:
+    pieces: list[str]
+    fail: Exception | None = None  # raised at the first read, as the real request would be
+    fail_after_first: Exception | None = None
+    finish_reason: str = "STOP"
+    # Set just before waiting on `hold`: the first piece has been handed over.
+    waiting: threading.Event = field(default_factory=threading.Event)
+    hold: threading.Event | None = None
+    usage: Usage = field(default_factory=Usage)
+    closed: bool = False
+
+    @property
+    def complete(self) -> bool:
+        return self.finish_reason == "STOP"
+
+    def __iter__(self):
+        if self.fail:
+            raise self.fail
+        for i, piece in enumerate(self.pieces):
+            if i == 1 and self.hold:
+                self.waiting.set()
+                assert self.hold.wait(10), "the test never released the stream"
+            if i == 1 and self.fail_after_first:
+                raise self.fail_after_first
+            self.usage = Usage(input=1200, cached=0, output=20 * (i + 1), thinking=40)
+            yield piece
+
+    def close(self) -> None:
+        self.closed = True
+
+
 @dataclass
 class FakeCache:
     model: str
@@ -60,6 +101,12 @@ class FakeGemini:
     fail_next: Exception | None = None
     # Refuse to create caches, as Gemini does for content below its minimum size.
     reject_caches: bool = False
+    # Chat: what the next streams write, and how they end.
+    chat_pieces: list[str] = field(default_factory=lambda: list(CHAT_PIECES))
+    chat_finish: str = "STOP"
+    fail_mid_stream: Exception | None = None  # raised after the first piece
+    hold: threading.Event | None = None  # after the first piece, wait until it's set
+    streams: list[FakeStream] = field(default_factory=list)
     caches: dict[str, FakeCache] = field(default_factory=dict)
     calls: list[tuple[str, dict]] = field(default_factory=list)
     _n: int = 0
@@ -114,3 +161,31 @@ class FakeGemini:
             raise CacheMissing("gone", 403)
         usage = Usage(input=1200, cached=1000 if cache_name else 0, output=80, thinking=40)
         return Generated(result=ANSWERS[schema], usage=usage)
+
+    def stream(self, model, *, turns, system=None, cache_name=None, thinking=None) -> FakeStream:
+        self.calls.append(
+            (
+                "stream",
+                {
+                    "model": model,
+                    "turns": turns,
+                    "system": system,
+                    "cache_name": cache_name,
+                    "thinking": thinking,
+                },
+            )
+        )
+        fail = None
+        if self.fail_next:
+            fail, self.fail_next = self.fail_next, None
+        elif cache_name and cache_name not in self.caches:
+            fail = CacheMissing("gone", 403)
+        stream = FakeStream(
+            pieces=list(self.chat_pieces),
+            fail=fail,
+            fail_after_first=self.fail_mid_stream,
+            finish_reason=self.chat_finish,
+            hold=self.hold,
+        )
+        self.streams.append(stream)
+        return stream

@@ -26,6 +26,7 @@ import {
   SegmentedControl,
   StatusIcon,
   Switch,
+  Textarea,
   Toasts,
   useToasts,
 } from '../ui'
@@ -93,6 +94,7 @@ export default function DesignPage() {
   const { toasts, show, dismiss } = useToasts()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [switchOn, setSwitchOn] = useState(true)
+  const [note, setNote] = useState('')
   const [tab, setTab] = useState<'lookups' | 'chat' | 'highlights'>('lookups')
   const hex = readTokens(PALETTE.map((name) => `--color-${name}`))
 
@@ -250,6 +252,9 @@ export default function DesignPage() {
           </Field>
           <Field label="Author" hint="Leave blank if unknown.">
             <Input placeholder="G. W. F. Hegel" />
+          </Field>
+          <Field label="Note" hint="autoGrow: grows with its text, then scrolls. The chat's message box.">
+            <Textarea autoGrow rows={1} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ask about this book" />
           </Field>
           <div className="demo-row">
             <Input compact mono defaultValue="42" size={4} className="demo-compact" aria-label="Page" />
