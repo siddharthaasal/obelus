@@ -132,6 +132,7 @@ marketing-style pages, not the app. Mono is never used for headings or prose.
 | `Card` | A carbon surface with a hairline edge. `padded={false}` for lists whose rows bring their own padding; `as="ul"` for lists. |
 | `PageHeader` | The top of every page: optional breadcrumb, title, an accessory such as a count badge, description, actions. |
 | `Field`, `Input`, `Switch` | Forms. `Input compact mono` for toolbar inputs like the page number. `Switch` is for settings that apply immediately. |
+| `PageInput` | The page number field in the reader and debug view: shows the current page, Enter goes, Escape cancels. |
 | `SegmentedControl` | One of a few options, applied immediately: panel tabs, search modes, the theme. Native radios underneath; `iconOnly` turns labels into tooltips. |
 | `ThemeSwitcher`, `useTheme` | The top bar's theme control and the hook behind it. |
 | `Dialog` | Modal on the native `<dialog>`. Use it for confirmations and short forms. Pass `onSubmit` to make the panel a form. Footer order is Cancel, then the committing action. |
@@ -156,7 +157,13 @@ in empty states. Icons are always a single grey, unless they carry status.
 - **Messages:** use a `Note` when the message is about something on screen (a failed book, pages
   needing OCR). Use a toast when it reports the result of an action.
 - **Keyboard shortcuts** appear in button `title` text ("Next page (→ or J)") and, where there's
-  room, as `Kbd` hints next to the control.
+  room, as `Kbd` hints next to the control. Shortcuts are single keys, ignored while typing in a
+  field. `[` and `]` toggle left and right panels, as in Linear.
+- **Toggles** are ghost buttons with `aria-pressed`; pressed shows the active fill. Use them for
+  panels that open and modes that are on, like Contents or Fit to width.
+- **Full-window views** (the reader) replace the top bar with their own 48px toolbar: the logo
+  glyph links home, the view's controls sit in the middle and on the right, and side columns use
+  `--bg-surface` with a hairline edge. Below 900px wide, side columns float over the content.
 - **Focus** is a 1.5px mist outline offset by 2px. Never remove it without a replacement.
 - **Motion** is short (120–180ms) and never decorative. `prefers-reduced-motion` turns it off.
 

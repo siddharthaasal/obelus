@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, ReactNode } from 'react'
+import type { ComponentProps, InputHTMLAttributes, ReactNode } from 'react'
 import { cx } from './cx'
 import './Field.css'
 
@@ -6,7 +6,7 @@ type InputProps = {
   /** 26px tall instead of 32, for toolbars. */
   compact?: boolean
   mono?: boolean
-} & InputHTMLAttributes<HTMLInputElement>
+} & ComponentProps<'input'>
 
 export function Input({ compact, mono, className, ...rest }: InputProps) {
   return (

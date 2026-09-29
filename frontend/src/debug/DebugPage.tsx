@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, RotateCw } from 'lucide-react'
+import { BookOpen, ChevronLeft, ChevronRight, RotateCw } from 'lucide-react'
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import {
@@ -11,7 +11,8 @@ import {
   pageImageUrl,
   reprocessBook,
 } from '../api'
-import { Badge, Button, Card, cx, Input, Kbd, Note, PageHeader, Switch } from '../ui'
+import { readFlag, writeFlag } from '../prefs'
+import { Badge, Button, ButtonLink, Card, cx, Kbd, Note, PageHeader, PageInput, Switch } from '../ui'
 import './debug.css'
 
 const REASON_LABEL: Record<string, string> = {
@@ -31,7 +32,7 @@ export default function DebugPage() {
   const [book, setBook] = useState<Book | null>(null)
   const [page, setPage] = useState<Page | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showImage, setShowImage] = useState(() => readPref(IMAGE_PREF, true))
+  const [showImage, setShowImage] = useState(() => readFlag(IMAGE_PREF, true))
 
   const loadBook = useCallback(
     () =>
@@ -93,7 +94,7 @@ export default function DebugPage() {
 
   function toggleImage() {
     setShowImage((v) => {
-      writePref(IMAGE_PREF, !v)
+      writeFlag(IMAGE_PREF, !v)
       return !v
     })
   }
@@ -128,6 +129,9 @@ export default function DebugPage() {
         actions={
           <>
             <Switch label="Page image" checked={showImage} onChange={toggleImage} />
+            <ButtonLink to={`/books/${bookId}?page=${n}`} icon={BookOpen} title="Open this page in the reader">
+              Read
+            </ButtonLink>
             <Button icon={RotateCw} onClick={reprocess} disabled={busy}>
               {busy ? 'Reprocessing…' : 'Reprocess book'}
             </Button>
@@ -145,7 +149,7 @@ export default function DebugPage() {
             aria-label="Previous page"
             title="Previous page (← or K)"
           />
-          <PageInput key={n} value={n} max={total} onGo={go} />
+          <PageInput value={n} max={total} onGo={go} />
           <span className="pager-of tabular">of {total}</span>
           <Button
             size="sm"
@@ -236,44 +240,4 @@ function Column({ title, children }: { title: string; children: ReactNode }) {
       <div className="debug-col-body">{children}</div>
     </Card>
   )
-}
-
-function PageInput({ value, max, onGo }: { value: number; max: number; onGo: (n: number) => void }) {
-  const [draft, setDraft] = useState(String(value))
-  const commit = () => {
-    const parsed = Number(draft)
-    if (Number.isFinite(parsed) && parsed >= 1) onGo(Math.round(parsed))
-    else setDraft(String(value))
-  }
-  return (
-    <Input
-      compact
-      mono
-      className="page-input"
-      inputMode="numeric"
-      aria-label="Page number"
-      value={draft}
-      size={String(max).length + 1}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
-      onKeyDown={(e) => e.key === 'Enter' && commit()}
-    />
-  )
-}
-
-function readPref(key: string, fallback: boolean): boolean {
-  try {
-    const v = localStorage.getItem(key)
-    return v === null ? fallback : v === '1'
-  } catch {
-    return fallback
-  }
-}
-
-function writePref(key: string, value: boolean) {
-  try {
-    localStorage.setItem(key, value ? '1' : '0')
-  } catch {
-    // storage unavailable; the toggle just won't persist
-  }
 }

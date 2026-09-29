@@ -47,6 +47,22 @@ cleaned text side by side, plus every line cleanup removed and why. Use it to ch
 especially a scan. Pages with no usable text (image-only scans) are flagged as needing OCR, which
 comes in a later phase.
 
+## Reading
+
+Click a book's title, or **Read**, to open it. A book reopens on the page where you left off, and
+the library shows how far you've got. **Contents** lists the PDF's table of contents, if it has
+one, and marks the section you're in. The side panel will hold lookups, chat, and highlights.
+
+| Key | Action |
+| --- | --- |
+| `J` / `K` | Next / previous page |
+| `G` | Go to a page (focuses the page number) |
+| `+` / `-` / `0` | Zoom in / out / reset (also with ⌘ or Ctrl) |
+| `[` / `]` | Show or hide the contents / the side panel |
+
+Books can be read while they're still being extracted; only a failed book can't be opened.
+**Inspect this page's text** in the toolbar opens the debug view at the page you're on.
+
 ## Everyday commands
 
 | Command | What it does |

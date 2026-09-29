@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, Query, Response, UploadFile, statu
 from fastapi.responses import FileResponse
 from pydantic import field_validator
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import SQLModel, select
+from sqlmodel import Field, SQLModel, select, update
 
 from app.config import get_settings
 from app.db import SessionDep
@@ -65,6 +65,10 @@ class BookUpdate(SQLModel):
         if v is not None and not v.strip():
             raise ValueError("title can't be blank")
         return v.strip() if v else v
+
+
+class PositionIn(SQLModel):
+    page: int = Field(ge=1)
 
 
 class PageOut(SQLModel):
@@ -145,6 +149,23 @@ def update_book(book_id: int, changes: BookUpdate, session: SessionDep) -> BookO
     session.commit()
     session.refresh(book)
     return BookOut.of(book)
+
+
+@router.put("/{book_id}/position", status_code=status.HTTP_204_NO_CONTENT)
+def save_position(book_id: int, position: PositionIn, session: SessionDep) -> None:
+    """Remember the page the reader is on, so the book reopens there."""
+    book = _get_book(session, book_id)
+    if book.page_count is not None and position.page > book.page_count:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_CONTENT, f"The book has {book.page_count} pages"
+        )
+    # Reading isn't editing: pass updated_at through so onupdate leaves it alone.
+    session.exec(
+        update(Book)
+        .where(Book.id == book_id)
+        .values(last_read_page=position.page, updated_at=Book.updated_at)
+    )
+    session.commit()
 
 
 @router.delete("/{book_id}", status_code=status.HTTP_204_NO_CONTENT)

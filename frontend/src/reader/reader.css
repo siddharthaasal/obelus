@@ -1,0 +1,318 @@
+/* The reader fills the window: a toolbar, then contents | pages | panel. */
+
+.reader {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--bg-canvas);
+}
+.reader-message {
+  display: grid;
+  place-items: center;
+}
+
+.reader-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-16);
+  flex-shrink: 0;
+  height: var(--topbar-height);
+  padding: 0 var(--spacing-12);
+  border-bottom: var(--hairline) solid var(--border-subtle);
+}
+.reader-bar-start,
+.reader-bar-end {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-4);
+  flex: 1 1 0;
+  min-width: 0;
+}
+.reader-bar-end {
+  justify-content: flex-end;
+}
+.reader-home {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--radius-control);
+}
+.reader-home:hover {
+  background: var(--bg-hover);
+}
+.reader-title {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-8);
+  min-width: 0;
+  margin-left: var(--spacing-6);
+  white-space: nowrap;
+}
+.reader-title-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fg-strong);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+}
+.reader-title-author {
+  flex-shrink: 100;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+}
+
+.reader-pager {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  flex-shrink: 0;
+}
+.reader-of,
+.reader-label {
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+.reader-label {
+  font-size: var(--text-label);
+  color: var(--fg-faint);
+}
+
+.reader-zoom {
+  display: flex;
+  align-items: center;
+}
+.reader-zoom-value {
+  min-width: 44px;
+  height: 26px;
+  padding: 0 var(--spacing-4);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+  cursor: pointer;
+}
+.reader-zoom-value:hover:not(:disabled) {
+  background: var(--bg-hover);
+  color: var(--fg-body);
+}
+.reader-zoom-value:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.reader-theme {
+  display: flex;
+  margin: 0 var(--spacing-8);
+}
+
+.reader-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Pages */
+
+.reader-stage {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+.reader-host,
+.reader-viewer {
+  position: absolute;
+  inset: 0;
+}
+.reader-viewer {
+  overflow: auto;
+  outline: none;
+}
+.reader-viewer {
+  /* pdf.js spaces pages with a transparent border; 9px is what its fit-to-width allows for. */
+  --reader-page-border: 9px;
+  --page-border: var(--reader-page-border) solid transparent;
+  --page-margin: 0 auto -2px;
+}
+.reader-viewer .pdfViewer {
+  padding: var(--spacing-12) 0 var(--spacing-64);
+}
+/* Book pages stay white in both themes, framed by a hairline at the page edge. */
+.reader-viewer .pdfViewer .page {
+  outline: 1px solid var(--border-subtle);
+  outline-offset: calc(-1 * var(--reader-page-border));
+}
+/* pdf.js paints selections onto the canvas; the text layer's own highlight is only a fallback. */
+.reader-viewer .canvasWrapper .selection,
+.reader-viewer .textLayer:not(.selectionRendering) ::selection {
+  background: var(--selection);
+}
+
+.reader-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--bg-canvas);
+}
+.reader-loading {
+  display: flex;
+  justify-content: center;
+  gap: var(--spacing-8);
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  background: transparent;
+  pointer-events: none;
+}
+
+/* Side columns: contents on the left, the panel on the right */
+
+.reader-side {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-height: 0;
+  background: var(--bg-surface);
+}
+.reader-contents {
+  width: 280px;
+  border-right: var(--hairline) solid var(--border-subtle);
+}
+.reader-panel {
+  width: 360px;
+  border-left: var(--hairline) solid var(--border-subtle);
+}
+.reader-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-8);
+  flex-shrink: 0;
+  height: 44px;
+  padding: 0 var(--spacing-8) 0 var(--spacing-12);
+  border-bottom: var(--hairline) solid var(--border-subtle);
+}
+.reader-side-title {
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+  font-weight: var(--font-weight-medium);
+}
+.reader-side-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.reader-contents .reader-side-body {
+  padding: var(--spacing-6) var(--spacing-6) var(--spacing-24);
+}
+
+.toc,
+.toc ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.toc-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  border-radius: var(--radius-control);
+}
+.toc-row:hover {
+  background: var(--bg-hover);
+}
+.toc-row.is-current {
+  background: var(--bg-active);
+}
+.toc-toggle {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-badge);
+  background: transparent;
+  color: var(--fg-faint);
+  cursor: pointer;
+}
+button.toc-toggle:hover {
+  color: var(--fg-body);
+}
+.toc-toggle svg {
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.toc-toggle.is-open svg {
+  transform: rotate(90deg);
+}
+.toc-link {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-8);
+  flex: 1;
+  min-width: 0;
+  padding: 5px var(--spacing-6) 5px var(--spacing-2);
+  border: 0;
+  background: transparent;
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  line-height: 1.35;
+  text-align: left;
+  cursor: pointer;
+}
+.toc-link:hover:not(:disabled),
+.toc-row.is-current .toc-link {
+  color: var(--fg-strong);
+}
+.toc-link:disabled {
+  cursor: default;
+}
+.toc-title {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.toc-page {
+  flex-shrink: 0;
+  color: var(--fg-faint);
+  font-size: 11px;
+}
+
+/* Narrow windows: the columns float over the pages instead of squeezing them. */
+@media (max-width: 900px) {
+  .reader-side {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: var(--z-overlay);
+    box-shadow: var(--shadow-overlay);
+  }
+  .reader-contents {
+    left: 0;
+    width: min(300px, 85vw);
+  }
+  .reader-panel {
+    right: 0;
+    width: min(360px, 90vw);
+  }
+  .reader-title,
+  .reader-theme,
+  .reader-label {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .reader-zoom,
+  .reader-bar-end > a {
+    display: none;
+  }
+}
