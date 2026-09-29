@@ -24,6 +24,24 @@ merge. Run `cd backend && uv run alembic merge heads -m "merge"` and commit the 
 
 Take a `make backup` before pulling someone else's migrations if your library matters to you.
 
+## Tests
+
+`make test` runs against a separate `obelus_test` database (created automatically) and a
+temporary data directory, so it never touches your library. The background worker is off in
+tests; call the `run_jobs` fixture to process queued jobs.
+
+## Tuning text cleanup
+
+The rules live in `backend/app/ingest/clean.py`, and PDFs vary a lot. When a book comes out wrong:
+
+1. Find the bad page with **Inspect text** in the library.
+2. Reproduce it as a small case in `backend/tests/test_clean.py`. Build rows by hand: position,
+   font size, and text are all a rule sees.
+3. Fix the rule, run `make test`, then **Reprocess book** in the debug view to re-run extraction.
+
+Font-size rules (footnotes, headings) are skipped on scanned pages, because OCR text layers have
+meaningless sizes.
+
 ## Code style
 
 - **Python:** `make fmt` formats and autofixes. `make lint` must pass. Ruff config is in

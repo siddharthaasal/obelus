@@ -1,39 +1,40 @@
 import { useEffect, useState } from 'react'
+import { Link, Outlet } from 'react-router'
 import { getHealth, type Health } from './api'
 
-type State =
-  | { kind: 'loading' }
-  | { kind: 'ok'; health: Health }
-  | { kind: 'error'; message: string }
-
 function App() {
-  const [state, setState] = useState<State>({ kind: 'loading' })
+  return (
+    <div className="app">
+      <header className="topbar">
+        <Link to="/" className="brand">
+          Obelus
+        </Link>
+        <HealthBadge />
+      </header>
+      <Outlet />
+    </div>
+  )
+}
+
+function HealthBadge() {
+  const [health, setHealth] = useState<Health | 'unreachable' | null>(null)
 
   useEffect(() => {
     getHealth()
-      .then((health) => setState({ kind: 'ok', health }))
-      .catch((err: unknown) =>
-        setState({ kind: 'error', message: err instanceof Error ? err.message : String(err) }),
-      )
+      .then(setHealth)
+      .catch(() => setHealth('unreachable'))
   }, [])
 
+  if (health === null) return null
+  const ok = health !== 'unreachable' && health.status === 'ok'
+  const title =
+    health === 'unreachable'
+      ? 'Backend unreachable'
+      : `db ${health.db} · pgvector ${health.pgvector ?? 'missing'}`
   return (
-    <main style={{ maxWidth: 560, margin: '0 auto', padding: '20vh 16px 0' }}>
-      <h1 style={{ fontWeight: 400, fontSize: '2.5rem', margin: 0 }}>Obelus</h1>
-      <p style={{ color: 'var(--muted)', marginTop: 4 }}>A reading companion for dense books.</p>
-      <p style={{ fontFamily: 'ui-monospace, monospace', fontSize: 14 }}>
-        {state.kind === 'loading' && 'Checking backend…'}
-        {state.kind === 'ok' && (
-          <span style={{ color: state.health.status === 'ok' ? 'var(--ok)' : 'var(--bad)' }}>
-            backend {state.health.status} · db {state.health.db} · pgvector{' '}
-            {state.health.pgvector ?? 'missing'}
-          </span>
-        )}
-        {state.kind === 'error' && (
-          <span style={{ color: 'var(--bad)' }}>backend unreachable: {state.message}</span>
-        )}
-      </p>
-    </main>
+    <span className={`health ${ok ? 'ok' : 'bad'}`} title={title}>
+      {ok ? 'connected' : title}
+    </span>
   )
 }
 
