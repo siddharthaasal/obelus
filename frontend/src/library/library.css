@@ -105,6 +105,150 @@
   flex-shrink: 0;
 }
 
+/* Grid */
+
+.book-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: var(--spacing-32) var(--spacing-24);
+  margin: var(--spacing-24) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.book-card {
+  display: grid;
+  align-content: start;
+  gap: var(--spacing-12);
+  min-width: 0;
+}
+.book-card-cover {
+  position: relative;
+}
+.book-card-cover > a {
+  display: block;
+  border-radius: var(--radius-small);
+}
+.book-card-actions {
+  position: absolute;
+  top: var(--spacing-8);
+  right: var(--spacing-8);
+  display: flex;
+  gap: var(--spacing-2);
+  padding: var(--spacing-2);
+  border-radius: var(--radius-control);
+  background: var(--bg-raised);
+  box-shadow: var(--shadow-overlay);
+  opacity: 0;
+  transition: opacity var(--duration-fast) var(--ease-out);
+}
+.book-card:hover .book-card-actions,
+.book-card-actions:focus-within {
+  opacity: 1;
+}
+@media (hover: none) {
+  .book-card-actions {
+    opacity: 1;
+  }
+}
+.book-card-body {
+  display: grid;
+  gap: var(--spacing-2);
+  min-width: 0;
+}
+.book-card-title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--fg-strong);
+  font-size: var(--text-ui);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  letter-spacing: var(--tracking-ui);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+.book-card-title a:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+}
+.book-card-meta,
+.book-card-status {
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.book-card-status {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+  margin-top: var(--spacing-2);
+}
+.book-card-pending .cover-placeholder {
+  display: grid;
+  place-items: center;
+}
+
+/* A first page as a cover: standing on the bottom of a 2:3 box, so covers of any page size line
+   up along a row. */
+.cover {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  aspect-ratio: 2 / 3;
+}
+.cover-image {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: var(--radius-small);
+  background: var(--bg-book-page);
+  box-shadow:
+    0 0 0 1px var(--border-subtle),
+    var(--shadow-sm);
+}
+.cover-image.is-loading {
+  position: absolute;
+  opacity: 0;
+}
+.cover-placeholder {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-small);
+  background: var(--bg-tint);
+}
+.cover-typeset {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-8);
+  width: 100%;
+  height: 100%;
+  padding: var(--spacing-16) var(--spacing-12);
+  overflow: hidden;
+  border-radius: var(--radius-small);
+  background: var(--bg-surface);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+.cover-typeset-title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--fg-strong);
+  font-size: var(--text-caption);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 6;
+}
+.cover-typeset-author {
+  color: var(--fg-muted);
+  font-size: var(--text-label);
+  line-height: 1.35;
+}
+
 .drop-overlay {
   position: fixed;
   inset: 0;
@@ -137,6 +281,10 @@
 }
 
 @media (max-width: 640px) {
+  .book-grid {
+    grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+    gap: var(--spacing-24) var(--spacing-16);
+  }
   .book-row {
     flex-wrap: wrap;
   }

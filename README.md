@@ -42,6 +42,12 @@ aside, words hyphenated across lines are rejoined, and lines are reflowed into p
 
 Removing a book moves its PDF to `DATA_DIR/trash/` rather than deleting it.
 
+The library has three views, switched with the icons next to **Rescan folder**: **List**,
+**Grid** (covers, taken from each book's first page), and **Shelf**, where books stand on a
+shelf you can scroll, drag, or browse with `←` `→`. Hover a book to pull it out; click it to take
+it off the shelf and see its cover, with **Read**, the book's other actions, and **Previous** /
+**Next**. `Esc` puts it back.
+
 **Inspect text** on a book opens the debug view: the page image, the raw extracted text, and the
 cleaned text side by side, plus every line cleanup removed and why. Use it to check a new book,
 especially a scan. Pages with no usable text (image-only scans) are flagged as needing OCR, which
