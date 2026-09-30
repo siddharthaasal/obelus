@@ -56,3 +56,8 @@
   max-width: none;
   padding-top: var(--spacing-24);
 }
+
+/* Full-bleed sections (the library's shelf) reach the window edges without a sideways scrollbar. */
+.app {
+  overflow-x: clip;
+}

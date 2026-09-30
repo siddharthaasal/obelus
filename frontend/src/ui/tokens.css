@@ -43,6 +43,8 @@
   /* Primitives: light theme additions. The rest of light reuses the grey ramp, inverted. */
   --color-porcelain: #f7f8f8;
   --color-lagoon: #0a8fa0; /* signal teal, deep enough for 3:1 on white */
+  /* Primitives: books on the shelf */
+  --color-page-edge: #ebe6da;
 
   /* Surfaces. In both themes, higher surfaces sit closer to the light. */
   --bg-canvas: light-dark(var(--color-porcelain), var(--color-void));
@@ -179,6 +181,37 @@
   --duration-fast: 120ms;
   --duration-normal: 180ms;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  /* The shelf's exception: books are objects, so they drift, slide, and settle */
+  --ease-glide: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /*
+   * Books on the shelf. A spine and its cover take their colour from the book's first page, so
+   * these stay the same in both themes, except the plain board of a book without a cover and the
+   * shadows it casts on the canvas.
+   */
+  --book-board: var(--bg-slate);
+  --book-ink-on-dark: var(--color-paper);
+  --book-ink-on-light: var(--color-obsidian);
+  --book-pages: repeating-linear-gradient(
+    90deg,
+    var(--color-page-edge) 0 2px,
+    color-mix(in srgb, var(--color-page-edge), black 8%) 2px 3px
+  );
+  /* Light across a rounded spine, laid over its lettering so the type looks printed on */
+  --book-sheen: linear-gradient(
+    90deg,
+    rgb(0 0 0 / 0.26),
+    rgb(255 255 255 / 0.12) 18%,
+    rgb(255 255 255 / 0.03) 40%,
+    rgb(0 0 0 / 0.04) 70%,
+    rgb(0 0 0 / 0.3)
+  );
+  --book-edge: rgb(0 0 0 / 0.16);
+  /* The sides of a book on the shelf are turned away from the light */
+  --book-side: rgb(0 0 0 / 0.32);
+  --book-contact: light-dark(rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.85));
+  --shelf-ground: light-dark(rgb(0 0 0 / 0.07), rgb(0 0 0 / 0.5));
+  --shadow-book: 0 32px 64px -24px light-dark(rgb(8 9 10 / 0.4), rgb(0 0 0 / 0.8));
 
   /* Layout */
   --page-max-width: 1200px;

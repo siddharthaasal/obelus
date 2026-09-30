@@ -174,6 +174,17 @@ in empty states. Icons are always a single grey, unless they carry status.
   `--bg-surface` with a hairline edge. Below 900px wide, side columns float over the content.
 - **Focus** is a 1.5px mist outline offset by 2px. Never remove it without a replacement.
 - **Motion** is short (120–180ms) and never decorative. `prefers-reduced-motion` turns it off.
+  The shelf is the one exception (below).
+- **Library views** are List, Grid, and Shelf, picked with an icon-only `SegmentedControl` in the
+  header and remembered per browser. All three share `library/BookActions.tsx`, so a book's
+  actions and dialogs are the same everywhere. Grid covers are the first page, standing on the
+  bottom edge of a 2:3 box so a row lines up whatever the page sizes.
+- **The shelf** (`library/shelf/`) treats books as objects. Spines are CSS 3D boxes coloured
+  from the cover's left edge, with head and foot bands in the cover's most saturated colour, and
+  the `--book-*` tokens light and shade them. Its motion is physical and slower than the rest of
+  the app: a hovered book slides out (560ms), a clicked one leaves the shelf and turns to show its
+  cover (900ms), and a new one glides into place (1100ms), all on `--ease-glide`. Nothing
+  bounces. Keep this motion on the shelf; don't bring it into chrome.
 
 ## Don't
 
@@ -181,7 +192,7 @@ in empty states. Icons are always a single grey, unless they carry status.
   states.
 - Use font weights of 700 or above, or gradients on buttons, cards, or text.
 - Use drop shadows to lift cards off the canvas. The only shadows are the lime button's,
-  overlays (dialogs, toasts), and the white page image.
+  overlays (dialogs, toasts), the white page image, and the books on the shelf.
 - Use radii above 12px, or colour a paragraph.
 - Style a page with a one-off button, input, or badge. Use or extend the component.
 

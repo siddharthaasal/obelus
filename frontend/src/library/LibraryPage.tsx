@@ -1,4 +1,4 @@
-import { BookOpen, FolderSync, Plus, Upload } from 'lucide-react'
+import { BookOpen, FolderSync, LayoutGrid, LibraryBig, List, Plus, Upload } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   type Book,
@@ -10,18 +10,49 @@ import {
   scanLibrary,
   uploadBook,
 } from '../api'
-import { Badge, Button, Card, EmptyState, PageHeader, StatusIcon, Toasts, useToasts } from '../ui'
+import { readPref, writePref } from '../prefs'
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  PageHeader,
+  type SegmentOption,
+  SegmentedControl,
+  StatusIcon,
+  Toasts,
+  useToasts,
+} from '../ui'
+import type { BookHandlers } from './BookActions'
+import BookGrid from './BookGrid'
 import BookRow from './BookRow'
+import Shelf from './shelf/Shelf'
 import './library.css'
 
 const POLL_BUSY_MS = 1500
 // The backend scans the library folder every 10s; this picks up what it finds.
 const POLL_IDLE_MS = 5000
+// Long enough for a new book to finish sliding onto the shelf.
+const ARRIVING_MS = 1400
+
+type View = 'list' | 'grid' | 'shelf'
+const VIEWS: SegmentOption<View>[] = [
+  { value: 'list', label: 'List', icon: List },
+  { value: 'grid', label: 'Grid', icon: LayoutGrid },
+  { value: 'shelf', label: 'Shelf', icon: LibraryBig },
+]
+const VIEW_PREF = 'obelus.libraryView'
+const savedView = (): View => {
+  const v = readPref(VIEW_PREF)
+  return v === 'grid' || v === 'shelf' ? v : 'list'
+}
 
 export default function LibraryPage() {
   const [books, setBooks] = useState<Book[] | null>(null)
   const [libraryDir, setLibraryDir] = useState<string | null>(null)
   const [uploading, setUploading] = useState(0)
+  const [view, setView] = useState(savedView)
+  const arriving = useArrivals(books)
   const { toasts, show: say, dismiss } = useToasts()
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -89,6 +120,17 @@ export default function LibraryPage() {
     await refresh()
   }
 
+  const handlers = (book: Book): BookHandlers => ({
+    onReprocess: () => act(() => reprocessBook(book.id), "Couldn't reprocess"),
+    onRemove: () => act(() => deleteBook(book.id), `Couldn't remove “${book.title}”`),
+    onSaved: refresh,
+  })
+
+  function chooseView(v: View) {
+    setView(v)
+    writePref(VIEW_PREF, v)
+  }
+
   return (
     <main className="page library">
       <PageHeader
@@ -113,6 +155,7 @@ export default function LibraryPage() {
         }
         actions={
           <>
+            <SegmentedControl label="View" options={VIEWS} value={view} onChange={chooseView} iconOnly />
             <Button icon={FolderSync} onClick={rescan} title="Look for PDFs added to the library folder">
               Rescan folder
             </Button>
@@ -140,6 +183,10 @@ export default function LibraryPage() {
             <p>Add a PDF to get started. Try the messiest one you own first.</p>
           </EmptyState>
         </Card>
+      ) : view === 'shelf' ? (
+        <Shelf books={books} uploading={uploading} arriving={arriving} handlers={handlers} />
+      ) : view === 'grid' ? (
+        <BookGrid books={books} uploading={uploading} handlers={handlers} />
       ) : (
         <Card as="ul" padded={false} className="library-list">
           {uploading > 0 && (
@@ -151,13 +198,7 @@ export default function LibraryPage() {
             </li>
           )}
           {books.map((book) => (
-            <BookRow
-              key={book.id}
-              book={book}
-              onReprocess={() => act(() => reprocessBook(book.id), "Couldn't reprocess")}
-              onRemove={() => act(() => deleteBook(book.id), `Couldn't remove “${book.title}”`)}
-              onSaved={refresh}
-            />
+            <BookRow key={book.id} book={book} {...handlers(book)} />
           ))}
         </Card>
       )}
@@ -174,6 +215,31 @@ export default function LibraryPage() {
       )}
     </main>
   )
+}
+
+/** The newest book to appear since the page loaded, for a moment after it does. */
+function useArrivals(books: Book[] | null) {
+  const known = useRef<Set<number> | null>(null)
+  const timer = useRef<number>(undefined)
+  const [arriving, setArriving] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!books) return
+    const seen = known.current
+    known.current = new Set(books.map((b) => b.id))
+    // The first load is the library as it was, not new arrivals.
+    const fresh = seen && books.find((b) => !seen.has(b.id))
+    if (!fresh) return
+    setArriving(fresh.id)
+    // Not cleared when the list refreshes: that happens every couple of seconds while books
+    // are being processed.
+    window.clearTimeout(timer.current)
+    timer.current = window.setTimeout(() => setArriving(null), ARRIVING_MS)
+  }, [books])
+
+  useEffect(() => () => window.clearTimeout(timer.current), [])
+
+  return arriving
 }
 
 /** Whole-window file drag and drop. Returns whether files are being dragged over. */
