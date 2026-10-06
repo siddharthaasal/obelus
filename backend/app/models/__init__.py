@@ -7,6 +7,7 @@ Alembic autogenerates migrations.
 from app.models.book import Book, BookStatus
 from app.models.conversation import Conversation, Message, MessageStatus, Role
 from app.models.gemini_cache import GeminiCache
+from app.models.highlight import Highlight, HighlightColor
 from app.models.job import Job, JobStatus
 from app.models.lookup import Lookup, LookupKind
 from app.models.page import Page
@@ -16,6 +17,8 @@ __all__ = [
     "BookStatus",
     "Conversation",
     "GeminiCache",
+    "Highlight",
+    "HighlightColor",
     "Job",
     "JobStatus",
     "Lookup",

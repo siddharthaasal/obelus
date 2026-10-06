@@ -94,6 +94,7 @@ Primitives (`--color-void`, `--color-fog`, ...) are Linear's palette under its o
 | `--accent` | The one primary action |
 | `--status-done`, `--status-danger`, `--status-progress`, `--status-info`, `--status-idle` | Status glyphs, badges, note icons |
 | `--tag-violet`, `--tag-lavender` | Category tags (authors, topics) |
+| `--highlight-yellow`, `-green`, `-blue`, `-pink` | Highlighter inks on book pages (with `mix-blend-mode: multiply`) and their swatches. The same in both themes, since pages stay white |
 
 Spacing is `--spacing-4` through `--spacing-128`. Radii are `--radius-badge`, `--radius-control`,
 `--radius-card`, and `--radius-pill`. Use `--hairline` for dividers: it's 1px, or 0.5px on
@@ -134,6 +135,7 @@ marketing-style pages, not the app. Mono is never used for headings or prose.
 | `Field`, `Input`, `Textarea`, `Switch` | Forms. `Input compact mono` for toolbar inputs like the page number. `Textarea autoGrow` grows with its text up to 200px, then scrolls. `Switch` is for settings that apply immediately. |
 | `PageInput` | The page number field in the reader and debug view: shows the current page, Enter goes, Escape cancels. |
 | `PageRef` | A page citation, "p. 37" or "pp. 12–14". Shows the printed page number when the PDF has labels and jumps to the PDF page. |
+| `Swatches` | A choice of colour, applied immediately: a highlight's ink. Native radios; the chosen one gets a grey ring, since the colours carry no state. |
 | `SegmentedControl` | One of a few options, applied immediately: panel tabs, search modes, the theme. Native radios underneath; `iconOnly` turns labels into tooltips. |
 | `ThemeSwitcher`, `useTheme` | The top bar's theme control and the hook behind it. |
 | `Dialog` | Modal on the native `<dialog>`. Use it for confirmations and short forms. Pass `onSubmit` to make the panel a form. Footer order is Cancel, then the committing action. |
@@ -160,6 +162,8 @@ in empty states. Icons are always a single grey, unless they carry status.
 - **Citations** in AI answers are `PageRef`s set inline in the text (`panels/CitedText.tsx`
   turns the model's `[p. N]` into them). Clicking one jumps the reader to the page and briefly
   lights up its frame.
+- **Highlights** are drawn on the page below the text, in multiply, so they read like ink.
+  In the panel, a passage carries its ink as a 3px left edge; the text itself stays grey.
 - **Chat answers** are Markdown, rendered by `panels/Markdown.tsx` as React elements (never
   HTML): paragraphs, lists, quotes, and emphasis, with citations inline. Bold is 590, like
   every other weight ceiling. Questions sit in a tinted block with the page they were asked

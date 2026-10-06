@@ -167,6 +167,41 @@
   }
 }
 
+/* Highlights, drawn into each rendered page by reader/highlights.ts. Multiply keeps the ink
+   under the text, as a highlighter on paper; clicks pass through to the text. */
+.reader-viewer .highlight-layer {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+.reader-viewer .highlight {
+  position: absolute;
+  border-radius: var(--radius-small);
+}
+.reader-viewer .highlight-yellow {
+  background: var(--highlight-yellow);
+}
+.reader-viewer .highlight-green {
+  background: var(--highlight-green);
+}
+.reader-viewer .highlight-blue {
+  background: var(--highlight-blue);
+}
+.reader-viewer .highlight-pink {
+  background: var(--highlight-pink);
+}
+/* One the reader asked to see: its ink deepens, then settles. */
+.reader-viewer .highlight.is-flashing {
+  animation: highlight-flash 1.4s var(--ease-out);
+}
+@keyframes highlight-flash {
+  0%,
+  40% {
+    filter: saturate(2.4) brightness(0.82);
+  }
+}
+
 /* Actions for the selected text, floating above it. Positioned by SelectionPopover. */
 .selection-popover {
   position: absolute;
@@ -184,6 +219,12 @@
 }
 .selection-popover .kbd {
   margin-left: var(--spacing-2);
+}
+.selection-popover-divider {
+  align-self: stretch;
+  width: var(--hairline);
+  margin: var(--spacing-2) var(--spacing-2);
+  background: var(--border-subtle);
 }
 @keyframes popover-in {
   from {

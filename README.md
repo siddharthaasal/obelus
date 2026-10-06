@@ -57,8 +57,8 @@ comes in a later phase.
 
 Click a book's title, or **Read**, to open it. A book reopens on the page where you left off, and
 the library shows how far you've got. **Contents** lists the PDF's table of contents, if it has
-one, and marks the section you're in. The side panel holds your [lookups](#lookups) and
-[chats](#chat); highlights come later.
+one, and marks the section you're in. The side panel holds your [lookups](#lookups),
+[chats](#chat), and [highlights](#highlights-and-notes).
 
 | Key | Action |
 | --- | --- |
@@ -67,6 +67,7 @@ one, and marks the section you're in. The side panel holds your [lookups](#looku
 | `+` / `-` / `0` | Zoom in / out / reset (also with ⌘ or Ctrl) |
 | `[` / `]` | Show or hide the contents / the side panel |
 | `D` / `W` / `E` | Define / Who / Explain the selected text |
+| `H` / `N` | Highlight the selected text / highlight it and write a note |
 | `C` | Chat: open it and start typing (`Esc` hands the keys back to the book) |
 | `Esc` | Clear the selection |
 
@@ -94,6 +95,10 @@ Gemini context cache, so each lookup pays in full only for the question; the cac
 request instead, and a book too long for the model gets the pages around the selection. The
 prompts are plain files in `backend/app/ai/prompts/` (see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
+`.env.example` is set up for a free API key: a Flash-Lite model (the most generous free
+quota), caching off (the free tier doesn't include it for Flash-Lite), and a cap on how much of
+a book one request sends. With a paid key, its comments say what to change.
+
 ## Chat
 
 The side panel's **Chat** tab (`C`) is for talking the book through: what a chapter argues, how
@@ -117,9 +122,21 @@ With `MODEL_DEEP` different from `MODEL_FAST` and caching on, the chat keeps its
 cache of the book, made the first time you open the Chat tab. `CHAT_THINKING` trades answer
 quality for how soon the first words arrive.
 
-`.env.example` is set up for a free API key: a Flash-Lite model (the most generous free
-quota), caching off (the free tier doesn't include it for Flash-Lite), and a cap on how much of
-a book one request sends. With a paid key, its comments say what to change.
+## Highlights and notes
+
+Select a passage and choose **Highlight** (`H`) in the toolbar, or **Note** (`N`) to highlight
+it and start a note. Highlights are drawn on the page like ink and saved with the passage's
+text, so they don't depend on the zoom. Click one on the page to find it in the side panel's
+**Highlights** tab.
+
+- The tab lists them by page, in reading order. Click a passage to go to it on the page.
+- Each has a colour (new ones take the last colour you chose) and an optional note. A note is
+  saved when you click away or press ⌘/Ctrl+Enter; `Esc` cancels.
+- **Export notes** downloads one Markdown file for the book: highlights with their notes, and
+  saved lookups, in page order under the book's printed page numbers. It drops straight into
+  Obsidian or any other Markdown notes app.
+
+Highlights don't need an API key.
 
 ## Everyday commands
 
